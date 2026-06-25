@@ -1,0 +1,355 @@
+.page {
+  min-height: 100vh;
+  background: #f4f7fb;
+  color: #071b40;
+}
+
+.header {
+  display: flex;
+  min-height: 86px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid #e6edf6;
+  padding: 0 clamp(22px, 4vw, 58px);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+}
+
+.logo img {
+  width: 205px;
+  height: auto;
+}
+
+.backLink,
+.primaryButton {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.backLink {
+  color: #c49a43;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.62fr);
+  gap: clamp(28px, 6vw, 74px);
+  width: min(1180px, calc(100% - 44px));
+  margin: 54px auto 0;
+  align-items: center;
+  border-radius: 8px;
+  padding: clamp(34px, 5vw, 58px);
+  color: #ffffff;
+  background:
+    linear-gradient(112deg, rgba(7, 27, 64, 0.96) 0%, rgba(11, 47, 107, 0.92) 48%, rgba(234, 242, 255, 0.92) 100%),
+    url("/images/landing-carousel/car-route-cotiere.webp") center / cover no-repeat;
+  box-shadow: 0 22px 54px rgba(15, 23, 42, 0.14);
+}
+
+.copy {
+  display: grid;
+  gap: 20px;
+  max-width: 680px;
+}
+
+.kicker {
+  margin: 0;
+  color: #c49a43;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.copy h1,
+.loginCard h2,
+.statusCard h2 {
+  margin: 0;
+  line-height: 1.04;
+}
+
+.copy h1 {
+  color: #ffffff;
+  font-size: clamp(42px, 5vw, 66px);
+}
+
+.copy p:not(.kicker) {
+  max-width: 610px;
+  margin: 0;
+  color: #eef4ff;
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+.loginCard {
+  display: grid;
+  gap: 18px;
+  border: 1px solid #d7e0ed;
+  border-radius: 8px;
+  padding: 26px;
+  color: #071b40;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.loginCard h2 {
+  margin-top: 6px;
+  font-size: 30px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.field input {
+  min-height: 50px;
+  border: 1px solid #cfd8e6;
+  border-radius: 8px;
+  padding: 0 14px;
+  color: #172033;
+  background: #f4f7fb;
+  font: inherit;
+  font-weight: 700;
+}
+
+.primaryButton {
+  color: #ffffff;
+  background: #d71920;
+}
+
+.journeyCard {
+  display: grid;
+  gap: 22px;
+  width: min(1180px, calc(100% - 44px));
+  margin: 34px auto 0;
+  border: 1px solid #d7e0ed;
+  border-radius: 8px;
+  padding: 26px;
+  background: #ffffff;
+}
+
+.journeyHeader {
+  display: block;
+}
+
+.journeyHeader h2 {
+  margin: 6px 0 0;
+  color: #071b40;
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.1;
+}
+
+.journeyCard ol {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.journeyCard li {
+  display: grid;
+  position: relative;
+  grid-template-columns: auto 1fr;
+  gap: 8px 12px;
+  align-items: center;
+  min-height: 76px;
+  padding: 0 26px 0 0;
+  color: #5e6b7e;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.journeyCard li:not(:last-child)::after {
+  position: absolute;
+  top: 22px;
+  right: 24px;
+  left: 42px;
+  height: 4px;
+  border-radius: 999px;
+  background: #c49a43;
+  content: "";
+}
+
+.journeyCard li span {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #123885;
+  font-size: 12px;
+  position: relative;
+  z-index: 2;
+}
+
+.journeyCard li strong {
+  color: #071b40;
+  position: relative;
+  z-index: 2;
+}
+
+.journeyCard li small {
+  display: inline-flex;
+  width: fit-content;
+  grid-column: 2;
+  border-radius: 999px;
+  padding: 5px 9px;
+  color: #123885;
+  background: #eaf2ff;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.stepDone,
+.stepCurrent {
+  color: #071b40;
+}
+
+.journeyCard .stepDone span {
+  color: #ffffff;
+  background: #c49a43;
+}
+
+.journeyCard .stepCurrent span {
+  color: #071b40;
+  background: #c49a43;
+}
+
+.journeyCard .stepNext::after {
+  background: #d7e0ed;
+}
+
+.journeyCard .stepNext span {
+  color: #123885;
+  background: #eaf2ff;
+}
+
+.statusGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  width: min(1180px, calc(100% - 44px));
+  margin: 34px auto 0;
+}
+
+.statusCard {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  border: 1px solid #d7e0ed;
+  border-radius: 8px;
+  padding: 30px 26px;
+  background: #ffffff;
+  text-align: center;
+}
+
+.iconWrap {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border-radius: 8px;
+  color: #c49a43;
+  background: #071b40;
+}
+
+.statusCard h2 {
+  color: #071b40;
+  font-size: 26px;
+}
+
+.statusCard p {
+  max-width: 300px;
+  margin: 12px auto 0;
+  color: #5e6b7e;
+  line-height: 1.55;
+}
+
+.trustBand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: min(1180px, calc(100% - 44px));
+  margin: 34px auto 0;
+  border-top: 1px solid #d7e0ed;
+  padding: 24px 0 34px;
+  color: #5e6b7e;
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.trustBand svg {
+  color: #c49a43;
+}
+
+@media (max-width: 860px) {
+  .header,
+  .trustBand {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hero,
+  .journeyHeader,
+  .statusGrid,
+  .journeyCard ol {
+    grid-template-columns: 1fr;
+  }
+
+  .journeyCard li:not(:last-child)::after {
+    top: 42px;
+    bottom: -30px;
+    left: 14px;
+    width: 4px;
+    height: auto;
+    right: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    padding: 18px;
+  }
+
+  .hero,
+  .statusGrid,
+  .journeyCard,
+  .trustBand {
+    width: calc(100% - 28px);
+  }
+
+  .hero,
+  .loginCard,
+  .statusCard {
+    padding: 22px;
+  }
+
+  .copy h1 {
+    font-size: 38px;
+  }
+
+  .primaryButton,
+  .backLink {
+    width: 100%;
+  }
+}

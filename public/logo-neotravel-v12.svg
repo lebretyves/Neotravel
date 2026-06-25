@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 250 72" role="img" aria-labelledby="title desc">
+  <title id="title">NeoTravel</title>
+  <desc id="desc">Logo NeoTravel avec blason, deux etoiles et lignes bleu rouge or.</desc>
+  <g>
+    <rect x="0" y="8" width="56" height="56" rx="10" fill="#061b43"/>
+    <path d="M0 50h56v14H0z" fill="#d71920"/>
+    <path d="M28 19c9 8 12 18 7 31-8-5-14-12-16-23 3-4 5-6 9-8z" fill="#f0c45c"/>
+    <path d="M36 20c3 8 4 16 1 25 8-7 11-16 9-27-4-1-7 0-10 2z" fill="#ffffff"/>
+    <path d="M11 16l1.4 3.5 3.8.3-2.9 2.4.9 3.7-3.2-2-3.2 2 .9-3.7-2.9-2.4 3.8-.3z" fill="#d6a93a"/>
+    <path d="M23 13l1.2 3 3.2.3-2.5 2 .8 3.1-2.7-1.7-2.7 1.7.8-3.1-2.5-2 3.2-.3z" fill="#d6a93a"/>
+  </g>
+  <g transform="translate(70 17)">
+    <text x="0" y="21" fill="#0b2148" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="800">Neo</text>
+    <text x="72" y="21" fill="#0b2148" font-family="Arial, Helvetica, sans-serif" font-size="25" font-weight="800">Travel</text>
+    <rect x="0" y="31" width="62" height="4" rx="2" fill="#123885"/>
+    <rect x="70" y="31" width="48" height="4" rx="2" fill="#d71920"/>
+    <rect x="126" y="31" width="40" height="4" rx="2" fill="#c49a43"/>
+    <text x="1" y="49" fill="#5e6b7e" font-family="Arial, Helvetica, sans-serif" font-size="11" font-weight="700">transport premium groupes</text>
+  </g>
+</svg>
