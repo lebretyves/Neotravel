@@ -6,14 +6,15 @@ export const SUPABASE_SERVER_ENV_KEYS = [
 ] as const;
 
 export type SupabaseServerEnvKey = (typeof SUPABASE_SERVER_ENV_KEYS)[number];
+export type EnvLike = Record<string, string | undefined>;
 
 export function getMissingSupabaseServerEnv(
-  env: NodeJS.ProcessEnv = process.env,
+  env: EnvLike = process.env,
 ): SupabaseServerEnvKey[] {
   return SUPABASE_SERVER_ENV_KEYS.filter((key) => !env[key]);
 }
 
-export function getSupabaseServerConfig(env: NodeJS.ProcessEnv = process.env) {
+export function getSupabaseServerConfig(env: EnvLike = process.env) {
   const missingKeys = getMissingSupabaseServerEnv(env);
 
   if (missingKeys.length > 0) {
@@ -26,7 +27,7 @@ export function getSupabaseServerConfig(env: NodeJS.ProcessEnv = process.env) {
   };
 }
 
-export function createServerSupabaseClient(env: NodeJS.ProcessEnv = process.env) {
+export function createServerSupabaseClient(env: EnvLike = process.env) {
   const config = getSupabaseServerConfig(env);
 
   return createClient(config.url, config.serviceRoleKey, {

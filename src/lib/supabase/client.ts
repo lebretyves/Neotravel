@@ -5,12 +5,13 @@ export const SUPABASE_ENV_KEYS = [
 ] as const;
 
 export type SupabaseEnvKey = (typeof SUPABASE_ENV_KEYS)[number];
+export type EnvLike = Record<string, string | undefined>;
 
-export function getMissingSupabaseEnv(env: NodeJS.ProcessEnv = process.env): SupabaseEnvKey[] {
+export function getMissingSupabaseEnv(env: EnvLike = process.env): SupabaseEnvKey[] {
   return SUPABASE_ENV_KEYS.filter((key) => !env[key]);
 }
 
-export function assertSupabaseEnv(env: NodeJS.ProcessEnv = process.env): void {
+export function assertSupabaseEnv(env: EnvLike = process.env): void {
   const missingKeys = getMissingSupabaseEnv(env);
 
   if (missingKeys.length > 0) {
