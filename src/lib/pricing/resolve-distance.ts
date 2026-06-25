@@ -1,5 +1,6 @@
 import type { DistanceSource } from "../domain/types";
 import { createServerSupabaseClient } from "../supabase/server";
+import { resolveDistanceViaOrs } from "./ors-distance";
 
 export type ResolveDistanceInput = {
   departureCity: string;
@@ -34,6 +35,13 @@ export async function resolveDistance(input: ResolveDistanceInput): Promise<Reso
   }
 
   if (!data) {
+    const distanceKm = await resolveDistanceViaOrs(input.departureCity, input.arrivalCity);
+
+    if (distanceKm !== null) {
+      await cacheResolvedRoute(input.departureCity, input.arrivalCity, distanceKm);
+      return { ok: true, distanceKm, source: "api" };
+    }
+
     return {
       ok: false,
       review: "UNKNOWN_ROUTE_NO_DISTANCE",
@@ -71,4 +79,24 @@ function normalizeRoutePart(value: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
+}
+
+async function cacheResolvedRoute(
+  departureCity: string,
+  arrivalCity: string,
+  distanceKm: number,
+): Promise<void> {
+  const supabase = createServerSupabaseClient();
+  const routeKey = buildRouteKey(departureCity, arrivalCity);
+  await supabase.from("route_pricing").upsert(
+    {
+      route_key: routeKey,
+      departure_city: departureCity,
+      arrival_city: arrivalCity,
+      distance_km: distanceKm,
+      distance_source: "api",
+      distance_status: "resolved",
+    },
+    { onConflict: "route_key" },
+  );
 }
