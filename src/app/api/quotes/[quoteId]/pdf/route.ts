@@ -1,9 +1,10 @@
 import { generateQuotePdf } from "@/features/quote/services/generateQuotePdf";
 import { jsonError } from "@/shared/lib/utils/apiResponse";
 
-export async function GET(_: Request, { params }: { params: Promise<{ quoteId: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ quoteId: string }> }) {
   const { quoteId } = await params;
-  const pdf = await generateQuotePdf(quoteId);
+  const language = new URL(request.url).searchParams.get("lang");
+  const pdf = await generateQuotePdf(quoteId, language);
 
   if (!pdf) return jsonError("NOT_FOUND", "Devis introuvable.", 404);
 
