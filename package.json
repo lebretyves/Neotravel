@@ -22,6 +22,7 @@
     "@ai-sdk/google": "^3.0.83",
     "@ai-sdk/groq": "^3.0.42",
     "@ai-sdk/openai": "^3.0.74",
+    "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "ai": "^6.0.209",
     "lucide-react": "^1.21.0",

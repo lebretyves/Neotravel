@@ -1,5 +1,3 @@
-import type { LeadStatus } from "@/shared/types/lead";
-
-export function StatusBadge({ status }: { status: LeadStatus }) {
+export function StatusBadge({ status }: { status: string }) {
   return <span>{status}</span>;
 }

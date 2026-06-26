@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import styles from "./dashboard.module.css";
+import { DashboardSearch } from "./DashboardSearch";
 
 type Kpi = {
   label: string;
@@ -9,7 +10,7 @@ type Kpi = {
 };
 
 type TableRow = {
-  cells: Array<string | number>;
+  cells: ReactNode[];
   href?: string;
   tone?: "review" | "won" | "danger";
 };
@@ -40,7 +41,7 @@ export function DashboardHeader({
         <p>{subtitle}</p>
       </div>
       <div className={styles.headerActions}>
-        <div className={styles.search}>Rechercher...</div>
+        <DashboardSearch />
         {actionHref && actionLabel ? (
           <Link className={styles.primary} href={actionHref}>
             {actionLabel}
@@ -107,17 +108,17 @@ export function DataTable({
       </div>
       {rows.map((row, index) => {
         const content = row.cells.map((cell, cellIndex) => (
-          <span key={`${cell}-${cellIndex}`}>
+          <span key={cellIndex}>
             {cellIndex === 0 ? <strong>{cell}</strong> : cell}
           </span>
         ));
 
         return row.href ? (
-          <Link className={styles.row} href={row.href} key={`${row.href}-${index}`}>
+          <Link className={styles.row} href={row.href} key={`${row.href}-${index}`} data-dash-row="">
             {content}
           </Link>
         ) : (
-          <div className={styles.row} key={`${row.cells.join("-")}-${index}`}>
+          <div className={styles.row} key={index} data-dash-row="">
             {content}
           </div>
         );

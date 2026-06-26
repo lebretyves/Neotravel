@@ -12,5 +12,11 @@ export const auditActions = {
   distanceResolved: "distance.resolved",
   validationError: "validation.error",
   agentError: "agent.error",
-  promptInjectionDetected: "security.prompt_injection_detected"
+  promptInjectionDetected: "security.prompt_injection_detected",
+  clientCreated: "client.created",
+  clientUpdated: "client.updated",
+  clientDeactivated: "client.deactivated",
+  clientReactivated: "client.reactivated",
+  clientDeleted: "client.deleted",
+  unauthorizedAccess: "security.unauthorized_access"
 } as const;

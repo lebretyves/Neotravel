@@ -1,0 +1,148 @@
+.actionList {
+  display: grid;
+}
+
+.actionRow {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 22px;
+  border-top: 1px solid #edf1f6;
+  transition: background 0.14s ease;
+}
+
+.actionRow:first-child {
+  border-top: 0;
+}
+
+.actionRow:hover {
+  background: #f7faff;
+}
+
+.actionInfo {
+  display: grid;
+  min-width: 0;
+}
+
+.actionInfo strong {
+  overflow: hidden;
+  color: #17202e;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actionInfo small {
+  color: #637188;
+  font-size: 12px;
+}
+
+.actionCta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  border-radius: 8px;
+  padding: 0 16px;
+  color: #ffffff;
+  background: #123885;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+  transition: transform 0.14s ease, background 0.14s ease, box-shadow 0.14s ease;
+}
+
+.actionCta:hover {
+  transform: translateY(-1px);
+  background: #0e2e6f;
+  box-shadow: 0 10px 20px -12px rgba(18, 56, 133, 0.8);
+}
+
+.empty {
+  display: grid;
+  gap: 6px;
+  padding: 30px 22px;
+  text-align: center;
+}
+
+.empty strong {
+  color: #0d2040;
+  font-size: 16px;
+}
+
+.empty span {
+  color: #637188;
+  font-size: 13px;
+}
+
+.guide {
+  margin-top: 22px;
+  padding: 18px 22px;
+  border: 1px solid #d9e2ed;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 14px 32px -14px rgba(5, 13, 31, 0.1);
+}
+
+.guideTitle {
+  margin: 0 0 14px;
+  color: #6b7890;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps li {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.stepNum {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #123885;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.steps strong {
+  display: block;
+  color: #1f2a3d;
+  font-size: 14px;
+}
+
+.steps small {
+  color: #7c8aa0;
+  font-size: 12px;
+}
+
+@media (max-width: 860px) {
+  .steps {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .actionRow {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .actionStatus {
+    display: none;
+  }
+}

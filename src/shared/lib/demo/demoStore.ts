@@ -137,6 +137,7 @@ export const demoStore = {
       contactName: input.contactName ?? null,
       email: input.email,
       phone: input.phone ?? null,
+      active: input.active ?? true,
       createdAt: nowIso()
     };
     store.clients.push(client);

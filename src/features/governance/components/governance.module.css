@@ -1,0 +1,443 @@
+.card {
+  margin-bottom: 22px;
+  padding: 20px 22px;
+  border: 1px solid #d9e2ed;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 14px 32px -14px rgba(5, 13, 31, 0.1);
+}
+
+.cardHead {
+  margin-bottom: 16px;
+}
+
+.cardHead h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #0d2040;
+  font-size: 18px;
+}
+
+.cardHead h2 svg {
+  color: #123885;
+}
+
+.cardHead p {
+  margin: 6px 0 0;
+  color: #637188;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* --- Formulaire d'ajout --- */
+.addGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field span {
+  color: #475467;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.input,
+.roleSelect {
+  min-height: 42px;
+  border: 1px solid #dde5ef;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #17202e;
+  background: #ffffff;
+  font: inherit;
+  font-size: 13px;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.input:focus,
+.roleSelect:focus {
+  border-color: #123885;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(18, 56, 133, 0.12);
+}
+
+.roleSelect {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.addActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.addNote {
+  color: #7c8aa0;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* --- Liste des membres --- */
+.members {
+  display: grid;
+  gap: 12px;
+}
+
+.memberRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid #e3e9f1;
+  border-radius: 10px;
+  background: #fbfcfe;
+}
+
+.memberInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1f427a, #123885);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.memberInfo strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #17202e;
+  font-size: 14px;
+}
+
+.memberInfo small {
+  display: block;
+  margin-top: 2px;
+  color: #637188;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.youTag {
+  border-radius: 5px;
+  padding: 1px 7px;
+  color: #123885;
+  background: #e8f1ff;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.roleSelectWrap {
+  display: block;
+}
+
+.srHide {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.memberActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.iconBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  border: 1px solid #d9e2ed;
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #475467;
+  background: #ffffff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.iconBtn:hover:not(:disabled) {
+  border-color: #bcd0ea;
+  background: #f4f8fd;
+}
+
+.iconBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.iconBtnActive {
+  border-color: #123885;
+  color: #123885;
+  background: #eef4ff;
+}
+
+.iconBtnDanger {
+  color: #d51b29;
+}
+
+.iconBtnDanger:hover:not(:disabled) {
+  border-color: #f7cdcd;
+  background: #fdecec;
+}
+
+.allRights {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: #123885;
+  background: #eef4ff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* --- Panneau des permissions (interrupteurs) --- */
+.permPanel {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  padding: 16px;
+  border: 1px dashed #cdd9ea;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.permHint {
+  margin: 0 0 14px;
+  color: #637188;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.permSection {
+  margin-bottom: 14px;
+}
+
+.permSection:last-child {
+  margin-bottom: 0;
+}
+
+.permSectionTitle {
+  margin: 0 0 8px;
+  color: #6b7890;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.permGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 18px;
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.switchInput {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.switchTrack {
+  position: relative;
+  flex-shrink: 0;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: #cdd6e3;
+  transition: background 0.16s ease;
+}
+
+.switchThumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(5, 13, 31, 0.3);
+  transition: transform 0.16s ease;
+}
+
+.switchInput:checked + .switchTrack {
+  background: #1f8a4b;
+}
+
+.switchInput:checked + .switchTrack .switchThumb {
+  transform: translateX(16px);
+}
+
+.switchInput:focus-visible + .switchTrack {
+  box-shadow: 0 0 0 3px rgba(18, 56, 133, 0.25);
+}
+
+.switchInput:disabled + .switchTrack {
+  opacity: 0.6;
+}
+
+.switchLabel {
+  color: #1f2a3d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.resetRow {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.resetRow .input {
+  flex: 1;
+}
+
+.empty {
+  padding: 12px 0;
+  color: #637188;
+  font-size: 13px;
+}
+
+/* --- Guide des rôles --- */
+.roleGuide {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.roleCard {
+  padding: 16px 18px;
+  border: 1px solid #d9e2ed;
+  border-radius: 10px;
+  background: #f8fafd;
+}
+
+.roleCard p {
+  margin: 10px 0 0;
+  color: #475467;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.roleBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 7px;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.roleAdmin {
+  color: #123885;
+  background: #e8f1ff;
+}
+
+.roleCommercial {
+  color: #8a5a06;
+  background: #fdf1d9;
+}
+
+/* --- Flashs & avertissements --- */
+.flashOk,
+.flashErr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.flashOk {
+  color: #0b7a4b;
+  background: #e3f6ec;
+  border: 1px solid #c3ead4;
+}
+
+.flashErr {
+  color: #b3261e;
+  background: #fdecec;
+  border: 1px solid #f7cdcd;
+}
+
+.warn {
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  border: 1px solid #f6e2b4;
+  border-radius: 8px;
+  color: #8a5a06;
+  background: #fdf1d9;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media (max-width: 860px) {
+  .addGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .memberRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .memberActions {
+    justify-content: flex-start;
+  }
+
+  .roleGuide {
+    grid-template-columns: 1fr;
+  }
+}

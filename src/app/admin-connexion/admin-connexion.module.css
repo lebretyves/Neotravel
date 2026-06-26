@@ -1,0 +1,291 @@
+.page {
+  min-height: 100vh;
+  background: #f4f7fb;
+  color: #071b40;
+}
+
+.header {
+  display: flex;
+  min-height: 86px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid #e6edf6;
+  padding: 0 clamp(22px, 4vw, 58px);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+}
+
+.logo img {
+  width: 205px;
+  height: auto;
+}
+
+.backLink,
+.primaryButton {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.backLink {
+  color: #c49a43;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.62fr);
+  gap: clamp(28px, 6vw, 74px);
+  width: min(1180px, calc(100% - 44px));
+  margin: 54px auto 0;
+  align-items: center;
+  border-radius: 8px;
+  padding: clamp(34px, 5vw, 58px);
+  color: #ffffff;
+  background:
+    linear-gradient(112deg, rgba(7, 27, 64, 0.96) 0%, rgba(11, 47, 107, 0.92) 48%, rgba(234, 242, 255, 0.9) 100%),
+    url("/images/landing-carousel/seminaire-entreprise.webp") center / cover no-repeat;
+  box-shadow: 0 22px 54px rgba(15, 23, 42, 0.14);
+}
+
+.copy {
+  display: grid;
+  gap: 20px;
+  max-width: 680px;
+}
+
+.kicker {
+  margin: 0;
+  color: #c49a43;
+  font-size: 13px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.copy h1,
+.loginCard h2,
+.featureCard h2 {
+  margin: 0;
+  line-height: 1.04;
+}
+
+.copy h1 {
+  color: #ffffff;
+  font-size: clamp(42px, 5vw, 62px);
+}
+
+.copy p:not(.kicker) {
+  max-width: 610px;
+  margin: 0;
+  color: #eef4ff;
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+.loginCard {
+  display: grid;
+  gap: 18px;
+  border: 1px solid #d7e0ed;
+  border-radius: 8px;
+  padding: 26px;
+  color: #071b40;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.loginCard h2 {
+  margin-top: 6px;
+  font-size: 30px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.field input {
+  min-height: 50px;
+  border: 1px solid #cfd8e6;
+  border-radius: 8px;
+  padding: 0 14px;
+  color: #172033;
+  background: #f4f7fb;
+  font: inherit;
+  font-weight: 700;
+}
+
+.field input:focus-visible {
+  outline: 2px solid #123885;
+  outline-offset: 1px;
+}
+
+.primaryButton {
+  border: 0;
+  color: #ffffff;
+  background: #d71920;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.primaryButton:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+
+.spinner {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.note {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.note a {
+  color: #123885;
+  text-decoration: underline;
+}
+
+.demoBanner {
+  margin: 0;
+  border: 1px solid #f2dca6;
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: #6b4d10;
+  background: #fff8e7;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.error {
+  margin: 0;
+  border: 1px solid #f4c2c4;
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: #a11014;
+  background: #fdecec;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  width: min(1180px, calc(100% - 44px));
+  margin: 34px auto 0;
+}
+
+.featureCard {
+  display: grid;
+  grid-template-columns: 54px 1fr;
+  gap: 18px;
+  align-items: start;
+  border: 1px solid #d7e0ed;
+  border-radius: 8px;
+  padding: 24px;
+  background: #ffffff;
+}
+
+.iconWrap {
+  display: grid;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  border-radius: 8px;
+  color: #c49a43;
+  background: #071b40;
+}
+
+.featureCard h2 {
+  color: #071b40;
+  font-size: 24px;
+}
+
+.featureCard p {
+  margin: 10px 0 0;
+  color: #5e6b7e;
+  line-height: 1.55;
+}
+
+.trustBand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: min(1180px, calc(100% - 44px));
+  margin: 34px auto 0;
+  border-top: 1px solid #d7e0ed;
+  padding: 24px 0 34px;
+  color: #5e6b7e;
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.trustBand svg {
+  color: #c49a43;
+}
+
+@media (max-width: 860px) {
+  .header,
+  .trustBand {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .hero,
+  .featureGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    padding: 18px;
+  }
+
+  .hero,
+  .featureGrid,
+  .trustBand {
+    width: calc(100% - 28px);
+  }
+
+  .hero,
+  .loginCard,
+  .featureCard {
+    padding: 22px;
+  }
+
+  .copy h1 {
+    font-size: 38px;
+  }
+
+  .primaryButton,
+  .backLink {
+    width: 100%;
+  }
+}

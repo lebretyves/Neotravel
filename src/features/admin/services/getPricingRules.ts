@@ -18,7 +18,7 @@ export async function getPricingAdminData() {
       .maybeSingle(),
     supabase
       .from("route_pricing")
-      .select("route_key, departure_city, arrival_city, distance_km, distance_status")
+      .select("route_key, departure_city, arrival_city, distance_km, base_price_eur, distance_status")
       .order("route_key", { ascending: true }),
   ]);
 
@@ -87,6 +87,7 @@ export async function getPricingAdminData() {
       departureCity: route.departure_city,
       arrivalCity: route.arrival_city,
       distanceKm: Number(route.distance_km),
+      basePriceEur: (route as { base_price_eur?: number }).base_price_eur ?? 0,
       active: route.distance_status === "resolved",
       version,
     })),

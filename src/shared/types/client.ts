@@ -4,6 +4,7 @@ export type Client = {
   contactName: string | null;
   email: string;
   phone: string | null;
+  active: boolean;
   createdAt: string;
 };
 
@@ -12,4 +13,5 @@ export type ClientInput = {
   contactName?: string | null;
   email: string;
   phone?: string | null;
+  active?: boolean;
 };

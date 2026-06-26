@@ -6,7 +6,7 @@ import type { Lead } from "@/shared/types/lead";
 type LeadRow = {
   id: string;
   status: Lead["status"];
-  raw_message: string | null;
+  free_message: string | null;
   departure_city: string | null;
   arrival_city: string | null;
   departure_date: string | null;
@@ -27,7 +27,7 @@ function toLead(row: LeadRow): Lead {
   return {
     id: row.id,
     status: row.status,
-    rawMessage: row.raw_message ?? undefined,
+    rawMessage: row.free_message ?? undefined,
     organization: client?.organization ?? null,
     email: client?.email ?? null,
     departureCity: row.departure_city,
@@ -45,7 +45,7 @@ function toLead(row: LeadRow): Lead {
 }
 
 const leadSelection =
-  "id, status, raw_message, departure_city, arrival_city, departure_date, return_date, passenger_count, trip_type, options, missing_fields, confidence, human_review_reason, ai_summary, clients(organization, email)";
+  "id, status, free_message, departure_city, arrival_city, departure_date, return_date, passenger_count, trip_type, options, missing_fields, confidence, human_review_reason, ai_summary, clients(organization, email)";
 
 export async function createLeadRecord(input: Partial<Lead>) {
   if (shouldUseDemoData()) return demoStore.createLead(input);
@@ -75,7 +75,7 @@ export async function createLeadRecord(input: Partial<Lead>) {
     .insert({
       client_id: clientId,
       status: input.status ?? "NEW",
-      raw_message: input.rawMessage ?? null,
+      free_message: input.rawMessage ?? null,
       departure_city: input.departureCity ?? null,
       arrival_city: input.arrivalCity ?? null,
       departure_date: input.departureDate ?? null,
@@ -101,7 +101,7 @@ export async function updateLeadRecord(id: string, patch: Partial<Lead>) {
   const supabase = createSupabaseAdminClient();
   const update = {
     status: patch.status,
-    raw_message: patch.rawMessage,
+    free_message: patch.rawMessage,
     departure_city: patch.departureCity,
     arrival_city: patch.arrivalCity,
     departure_date: patch.departureDate,
