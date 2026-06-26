@@ -1,5 +1,12 @@
+import { spawn } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { getLeadDetail } from "@/features/lead-detail/services/getLeadDetail";
 import { defaultLanguage, translations, type LanguageCode } from "@/shared/i18n/translations";
+import type { QuoteCalculation } from "@/shared/types/quote";
 import { getQuoteById } from "./getQuoteById";
 
 const colors = {
@@ -19,6 +26,7 @@ const colors = {
 
 const pdfLanguages = ["FR", "EN", "ES", "IT", "PT", "DE"] as const;
 type PdfLanguage = (typeof pdfLanguages)[number];
+const allLanguages = ["FR", "EN", "ES", "IT", "PT", "DE", "ZH", "AR"] as const;
 
 const pdfLegalNotes: Record<PdfLanguage, string> = {
   FR: "Version francaise de reference. Toute traduction est fournie pour information.",
@@ -34,9 +42,27 @@ function resolvePdfLanguage(language: string | null | undefined): PdfLanguage {
   return "FR";
 }
 
+function resolveRequestedLanguage(language: string | null | undefined): LanguageCode {
+  if (language && allLanguages.includes(language as LanguageCode)) return language as LanguageCode;
+  return defaultLanguage;
+}
+
 function translatePdf(source: string, language: PdfLanguage) {
   if (language === defaultLanguage) return source;
   return translations[language as Exclude<LanguageCode, "FR">]?.[source] ?? source;
+}
+
+function translateAny(source: string, language: LanguageCode) {
+  if (language === defaultLanguage) return source;
+  return translations[language as Exclude<LanguageCode, "FR">]?.[source] ?? source;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function ascii(value: string) {
@@ -185,10 +211,213 @@ function pushWrappedText(
   });
 }
 
+function edgeExecutablePath() {
+  const candidates = [
+    process.env.NEOTRAVEL_PDF_BROWSER,
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+    "google-chrome",
+    "chromium",
+    "chromium-browser",
+    "msedge"
+  ].filter(Boolean) as string[];
+
+  return candidates.find((candidate) => !candidate.includes(":\\") || existsSync(candidate)) ?? candidates[0];
+}
+
+function printHtmlToPdf(html: string) {
+  return new Promise<Uint8Array | null>(async (resolve) => {
+    const dir = path.join(tmpdir(), `neotravel-pdf-${randomUUID()}`);
+    const htmlPath = path.join(dir, "quote.html");
+    const pdfPath = path.join(dir, "quote.pdf");
+
+    try {
+      await mkdir(dir, { recursive: true });
+      await writeFile(htmlPath, html, "utf8");
+
+      const browser = spawn(edgeExecutablePath(), [
+        "--headless=new",
+        "--disable-gpu",
+        "--no-first-run",
+        "--disable-extensions",
+        `--print-to-pdf=${pdfPath}`,
+        `file:///${htmlPath.replace(/\\/g, "/")}`
+      ]);
+
+      const timeout = setTimeout(() => {
+        browser.kill();
+        resolve(null);
+      }, 20000);
+
+      browser.on("error", async () => {
+        clearTimeout(timeout);
+        await rm(dir, { force: true, recursive: true }).catch(() => undefined);
+        resolve(null);
+      });
+
+      browser.on("exit", async (code) => {
+        clearTimeout(timeout);
+        if (code !== 0) {
+          await rm(dir, { force: true, recursive: true }).catch(() => undefined);
+          resolve(null);
+          return;
+        }
+
+        const pdf = await readFile(pdfPath).catch(() => null);
+        await rm(dir, { force: true, recursive: true }).catch(() => undefined);
+        resolve(pdf ? new Uint8Array(pdf) : null);
+      });
+    } catch {
+      await rm(dir, { force: true, recursive: true }).catch(() => undefined);
+      resolve(null);
+    }
+  });
+}
+
+async function generateBrowserPdf(input: {
+  calculation: QuoteCalculation;
+  clientEmail: string;
+  clientName: string;
+  engineLabel: string;
+  language: LanguageCode;
+  optionLabel: string;
+  passengerLabel: string;
+  quoteId: string;
+  routeLabel: string;
+  traceabilityDate: string;
+  traceabilityId: string;
+  tripDates: string;
+  tripType: string;
+}) {
+  const tr = (source: string) => translateAny(source, input.language);
+  const direction = input.language === "AR" ? "rtl" : "ltr";
+  const align = input.language === "AR" ? "right" : "left";
+  const legalNote =
+    input.language === "ZH"
+      ? "法文版本为参考版本。翻译仅供信息参考。"
+      : "النسخة الفرنسية هي النسخة المرجعية. الترجمة مقدمة للمعلومات فقط.";
+
+  const rows = input.calculation.lines
+    .slice(0, 5)
+    .map(
+      (item) => `<tr>
+        <td>${escapeHtml(tr(item.label))}</td>
+        <td>1</td>
+        <td>${escapeHtml(euro(item.amount))}</td>
+        <td>${Math.round(input.calculation.vatRate * 100)}%</td>
+        <td><strong>${escapeHtml(euro(item.amount + item.amount * input.calculation.vatRate))}</strong></td>
+      </tr>`
+    )
+    .join("");
+
+  const html = `<!doctype html>
+<html lang="${input.language.toLowerCase()}" dir="${direction}">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    @page { size: A4; margin: 0; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    body { margin: 0; background: #fff; color: #141c2b; font-family: Arial, "Microsoft YaHei", "Noto Sans CJK SC", Tahoma, sans-serif; direction: ${direction}; text-align: ${align}; }
+    .page { width: 210mm; min-height: 297mm; padding: 16mm 14mm; }
+    .bars { display: grid; grid-template-columns: 34% 16% 50%; height: 4mm; border-radius: 2mm 2mm 0 0; overflow: hidden; }
+    .bars span:nth-child(1) { background: #cc1425; }
+    .bars span:nth-child(2) { background: #e39e29; }
+    .bars span:nth-child(3) { background: #0a3d8f; }
+    .paper { border: 1px solid #dbe3f0; border-top: 0; padding: 14mm 13mm 10mm; }
+    .header { display: flex; justify-content: space-between; gap: 18mm; align-items: flex-start; }
+    .brand { font-size: 18pt; font-weight: 800; color: #0a3d8f; }
+    .brand b { color: #cc1425; }
+    .sub { color: #5c6b82; font-size: 7pt; font-weight: 700; }
+    .ref { text-align: ${direction === "rtl" ? "left" : "right"}; }
+    h1 { margin: 0; color: #091a35; font-size: 28pt; }
+    .strip, .trip, .totals { background: #f7faff; border: 1px solid #dbe3f0; border-radius: 8px; }
+    .strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6mm; margin: 12mm 0; padding: 5mm; }
+    .label { color: #5c6b82; display: block; font-size: 7pt; font-weight: 800; margin-bottom: 2mm; }
+    strong { color: #141c2b; }
+    .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 12mm; margin-bottom: 9mm; }
+    .box { border: 1px solid #dbe3f0; border-radius: 8px; padding: 6mm; min-height: 31mm; }
+    h2 { margin: 0 0 5mm; color: #091a35; font-size: 13pt; }
+    p { margin: 0 0 2mm; font-size: 9pt; line-height: 1.45; }
+    .trip { padding: 6mm; margin-bottom: 8mm; }
+    .tripGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm 10mm; }
+    .chip { display: inline-flex; margin-top: 5mm; border: 1px solid #dbe3f0; border-radius: 999px; padding: 2mm 6mm; color: #0a3d8f; background: #e8f2ff; font-size: 8pt; font-weight: 800; }
+    table { width: 100%; border-collapse: collapse; margin-top: 4mm; font-size: 8pt; }
+    th { background: #091a35; color: #fff; text-align: ${align}; padding: 3mm; }
+    td { border-bottom: 1px solid #dbe3f0; padding: 3mm; }
+    tr:nth-child(even) td { background: #f7faff; }
+    .bottom { display: grid; grid-template-columns: 1.35fr .9fr; gap: 10mm; margin-top: 8mm; }
+    .trace { background: #e5faed; border: 1px solid #b8e5c7; border-radius: 8px; padding: 5mm 6mm; }
+    .trace h3 { margin: 0 0 4mm; color: #058247; }
+    .trace p { font-size: 8pt; }
+    .totals { padding: 5mm 6mm; }
+    .totalLine { display: flex; justify-content: space-between; margin-bottom: 4mm; font-size: 10pt; font-weight: 800; }
+    .conditions { border: 1px solid #dbe3f0; border-radius: 8px; padding: 5mm 6mm; margin-top: 8mm; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="bars"><span></span><span></span><span></span></div>
+    <section class="paper">
+      <header class="header">
+        <div>
+          <div class="brand">Neo <b>Travel</b></div>
+          <div class="sub">${escapeHtml(tr("Transport de voyageurs - devis client"))}</div>
+        </div>
+        <div class="ref">
+          <h1>${escapeHtml(tr("Devis").toUpperCase())}</h1>
+          <div class="sub">No ${escapeHtml(input.calculation.quoteNumber)}</div>
+        </div>
+      </header>
+      <section class="strip">
+        <div><span class="label">${escapeHtml(tr("Date emission"))}</span><strong>${new Date().toLocaleDateString("fr-FR")}</strong></div>
+        <div><span class="label">${escapeHtml(tr("Validite offre"))}</span><strong>${escapeHtml(tr("7 jours"))}</strong></div>
+        <div><span class="label">${escapeHtml(tr("Statut IA"))}</span><strong>${escapeHtml(tr("Regles metier validees"))}</strong></div>
+        <div><span class="label">${escapeHtml(tr("Canal envoi"))}</span><strong>Email</strong></div>
+      </section>
+      <section class="parties">
+        <div class="box"><h2>${escapeHtml(tr("Emetteur"))}</h2><p>NeoTravel SAS</p><p>${escapeHtml(tr("Transport de voyageurs"))}</p><p>contact@neotravel.fr</p></div>
+        <div class="box"><h2>${escapeHtml(tr("Client"))}</h2><p>${escapeHtml(input.clientName)}</p><p>${escapeHtml(tr("Email : "))}${escapeHtml(input.clientEmail)}</p><p>${escapeHtml(tr("Reference demande : "))}${escapeHtml(input.quoteId)}</p></div>
+      </section>
+      <section class="trip">
+        <h2>${escapeHtml(tr("Prestation demandee"))}</h2>
+        <div class="tripGrid">
+          <div><span class="label">${escapeHtml(tr("Trajet"))}</span><strong>${escapeHtml(input.routeLabel)}</strong></div>
+          <div><span class="label">${escapeHtml(tr("Date et horaires"))}</span><strong>${escapeHtml(input.tripDates)}</strong></div>
+          <div><span class="label">${escapeHtml(tr("Passagers"))}</span><strong>${escapeHtml(input.passengerLabel)}</strong></div>
+          <div><span class="label">${escapeHtml(tr("Type de trajet"))}</span><strong>${escapeHtml(input.tripType)}</strong></div>
+          <div><span class="label">${escapeHtml(tr("Vehicule"))}</span><strong>${escapeHtml(tr(input.calculation.breakdown.vehicleLabel))}</strong></div>
+          <div><span class="label">${escapeHtml(tr("Distance"))}</span><strong>${input.calculation.distanceKm} km</strong></div>
+        </div>
+        <span class="chip">${escapeHtml(input.optionLabel)}</span>
+      </section>
+      <h2>${escapeHtml(tr("Detail estimatif"))}</h2>
+      <table><thead><tr><th>${escapeHtml(tr("Designation"))}</th><th>${escapeHtml(tr("Qte"))}</th><th>${escapeHtml(tr("Prix HT"))}</th><th>TVA</th><th>${escapeHtml(tr("Total TTC"))}</th></tr></thead><tbody>${rows}</tbody></table>
+      <section class="bottom">
+        <div class="trace"><h3>${escapeHtml(tr("Traçabilité du devis"))}</h3><p>${escapeHtml(tr("Calcul réalisé le : "))}${escapeHtml(input.traceabilityDate)}</p><p>${escapeHtml(tr("Moteur : "))}${escapeHtml(input.engineLabel)}</p><p>${escapeHtml(tr("Référence : "))}${escapeHtml(input.traceabilityId)}</p><p>${escapeHtml(tr("Devis généré automatiquement selon les règles métier NeoTravel, sous réserve de validation opérationnelle."))}</p><p>${escapeHtml(legalNote)}</p></div>
+        <div class="totals"><div class="totalLine"><span>${escapeHtml(tr("Total HT"))}</span><strong>${escapeHtml(euro(input.calculation.priceHt))}</strong></div><div class="totalLine"><span>${escapeHtml(tr("TVA estimee"))}</span><strong>${escapeHtml(euro(input.calculation.vatAmount))}</strong></div><div class="totalLine"><span>${escapeHtml(tr("Total TTC"))}</span><strong>${escapeHtml(euro(input.calculation.priceTtc))}</strong></div><p class="sub">${escapeHtml(tr("Montant a confirmer apres disponibilite finale"))}</p></div>
+      </section>
+      <section class="conditions"><h2>${escapeHtml(tr("Conditions et acceptation"))}</h2><p>${escapeHtml(tr("Offre valable sous reserve de disponibilite partenaires et chauffeur. Le devis devient contractuel apres signature electronique ou accord ecrit du client. Ce document est un devis, pas une facture."))}</p></section>
+    </section>
+  </main>
+</body>
+</html>`;
+
+  const body = await printHtmlToPdf(html);
+  if (!body) return null;
+
+  return {
+    body,
+    fileName: `${input.calculation.quoteNumber}-${input.language}.pdf`,
+    mimeType: "application/pdf"
+  };
+}
+
 export async function generateQuotePdf(quoteId: string, language?: string | null) {
   const quote = await getQuoteById(quoteId);
   if (!quote) return null;
 
+  const requestedLanguage = resolveRequestedLanguage(language);
   const pdfLanguage = resolvePdfLanguage(language);
   const tr = (source: string) => translatePdf(source, pdfLanguage);
   const lead = await getLeadDetail(quote.leadId);
@@ -207,6 +436,28 @@ export async function generateQuotePdf(quoteId: string, language?: string | null
   const traceabilityDate = formatTraceabilityDate(generatedAt);
   const traceabilityId = traceabilityReference(generatedAt);
   const engineLabel = pricingEngineLabel(calculation.breakdown.matrixVersion);
+
+  if (requestedLanguage === "ZH" || requestedLanguage === "AR") {
+    const trAny = (source: string) => translateAny(source, requestedLanguage);
+    const browserOptions = options.length ? options.map((option) => trAny(option)).join("   ") : trAny("Aucune option ajoutee");
+    const browserPdf = await generateBrowserPdf({
+      calculation,
+      clientEmail: lead?.email ?? trAny("Email a confirmer"),
+      clientName: lead?.organization ?? trAny("Client particulier / organisation"),
+      engineLabel,
+      language: requestedLanguage,
+      optionLabel: browserOptions,
+      passengerLabel: lead?.passengerCount ? `${lead.passengerCount} ${trAny("passagers")}` : trAny("A confirmer"),
+      quoteId: quote.leadId,
+      routeLabel,
+      traceabilityDate,
+      traceabilityId,
+      tripDates: `${formatTripDates(lead?.departureDate, lead?.returnDate)} - ${trAny("horaires a confirmer")}`,
+      tripType: trAny(formatTripType(lead?.tripType))
+    });
+
+    if (browserPdf) return browserPdf;
+  }
 
   const commands: string[] = [
     rect(0, 0, 595, 842, colors.white),

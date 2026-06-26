@@ -8,7 +8,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ quot
 
   if (!pdf) return jsonError("NOT_FOUND", "Devis introuvable.", 404);
 
-  return new Response(pdf.body, {
+  const body = new ArrayBuffer(pdf.body.byteLength);
+  new Uint8Array(body).set(pdf.body);
+
+  return new Response(body, {
     headers: {
       "Content-Disposition": `attachment; filename="${pdf.fileName}"`,
       "Content-Type": pdf.mimeType
