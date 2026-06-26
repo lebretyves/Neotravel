@@ -2,6 +2,20 @@ import { z } from "zod";
 
 export const TripTypeSchema = z.enum(["one_way", "round_trip"]);
 
+export const ExtractionDeltaSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  organization: z.string().trim().min(1).optional(),
+  email: z.string().trim().email().optional(),
+  departure_city: z.string().trim().min(1).optional(),
+  arrival_city: z.string().trim().min(1).optional(),
+  departure_date: z.string().trim().optional(),
+  return_date: z.string().trim().optional(),
+  passenger_count: z.number().int().positive().optional(),
+  trip_type: TripTypeSchema.optional(),
+});
+
+export type ExtractionDelta = z.infer<typeof ExtractionDeltaSchema>;
+
 export const LeadQualificationSchema = z.object({
   name: z.string().trim().min(1).optional(),
   organization: z.string().trim().min(1).optional(),
@@ -12,9 +26,12 @@ export const LeadQualificationSchema = z.object({
   return_date: z.string().trim().min(1).optional(),
   passenger_count: z.number().int().optional(),
   trip_type: TripTypeSchema.optional(),
+  has_intermediate_stop: z.boolean().optional(),
+  intermediate_stops: z.array(z.string().trim().min(1)).optional(),
   options: z.record(z.string(), z.unknown()).optional(),
   free_message: z.string().trim().optional(),
 });
+
 
 export type LeadQualification = z.infer<typeof LeadQualificationSchema>;
 

@@ -58,6 +58,29 @@ export type QuoteSummary = {
   breakdown?: QuoteBreakdownData;
 };
 
+export type ExtractedFields = {
+  departureCity: string | null;
+  arrivalCity: string | null;
+  departureDate: string | null;
+  passengerCount: number | null;
+  tripType: "one_way" | "round_trip" | null;
+};
+
+export type LeadWarningCode =
+  | "DEPARTURE_DATE_INVALID"
+  | "DEPARTURE_DATE_PAST"
+  | "RETURN_BEFORE_DEPARTURE"
+  | "PASSENGER_COUNT_INVALID";
+
+export type LeadWarningField = "departureDate" | "returnDate" | "passengerCount";
+
+export type LeadWarning = {
+  field: LeadWarningField;
+  code: LeadWarningCode;
+  message: string;
+  blocking: boolean;
+};
+
 export type ChatApiResponse = {
   status: ChatApiStatus;
   message: string;
@@ -66,6 +89,8 @@ export type ChatApiResponse = {
   missingFields?: string[];
   reviewReason?: string;
   quote?: QuoteSummary;
+  extractedFields?: ExtractedFields;
+  warnings?: LeadWarning[];
 };
 
 export function chatJson(response: ChatApiResponse, init?: ResponseInit): Response {

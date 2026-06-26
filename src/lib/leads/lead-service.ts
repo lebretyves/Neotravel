@@ -12,6 +12,8 @@ export type LeadRecord = {
   return_date: string | null;
   passenger_count: number | null;
   trip_type: TripType | null;
+  has_intermediate_stop: boolean;
+  intermediate_stops: string[];
   options: QuoteOptions | null;
   free_message: string | null;
   status: LeadStatus;

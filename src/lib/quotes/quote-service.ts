@@ -57,6 +57,17 @@ export async function calculateQuoteForLead(
     throw new Error(`Lead ${leadId} not found.`);
   }
 
+  if (lead.has_intermediate_stop || lead.intermediate_stops.length > 0) {
+    const reason = "INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE";
+    await deps.markHumanReview(leadId, reason);
+
+    return {
+      ok: false,
+      status: "HUMAN_REVIEW",
+      reason,
+    };
+  }
+
   const missingFields = getMissingCriticalFields(lead);
 
   if (missingFields.length > 0) {

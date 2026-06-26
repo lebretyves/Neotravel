@@ -1,13 +1,17 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { generateText, NoObjectGeneratedError, RetryError, APICallError, type ModelMessage } from "ai";
+import { generateObject, NoObjectGeneratedError, RetryError, APICallError, type ModelMessage } from "ai";
 
 import { containsPromptInjectionAttempt, NEOTRAVEL_SYSTEM_PROMPT } from "../../../lib/ai/prompt";
 import { chatJson, type ExtractedFields } from "../../../lib/ai/chat-response";
-import { LeadQualificationSchema, type LeadQualification } from "../../../lib/domain/schemas";
-import { calculateQuoteForLead } from "../../../lib/quotes/quote-service";
+import { ExtractionDeltaSchema, LeadQualificationSchema, type LeadQualification } from "../../../lib/domain/schemas";
 import { createOrUpdateLead, detectMissingFields } from "../../../lib/ai/tools";
-import { getLeadById } from "../../../lib/leads/lead-service";
+import { getLeadById, markHumanReview, markLeadIncomplete } from "../../../lib/leads/lead-service";
 import { normalizeExtraction } from "../../../lib/ai/normalize-extraction";
+import { buildExistingQualification, mergeLead } from "../../../lib/ai/merge-existing";
+import { buildQualificationResponse } from "../../../lib/ai/qualification-response";
+import { extractTurnFacts } from "../../../lib/ai/extract-turn-facts";
+import { detectIntermediateStops } from "../../../lib/ai/detect-intermediate-stops";
+import { validateLead } from "../../../lib/ai/validate-lead";
 
 export const runtime = "nodejs";
 const DEFAULT_QUALIFICATION_TIMEOUT_MS = 30_000;
@@ -76,19 +80,7 @@ export async function POST(request: Request): Promise<Response> {
     if (existingLeadId) {
       const existing = await getLeadById(existingLeadId);
       if (existing) {
-        // Use missing_fields to exclude DB fallback values ("À compléter", "2099-01-01", etc.)
-        // that were inserted for NOT NULL constraints but are not real user-provided data.
-        const trulyMissing = new Set(existing.missing_fields ?? []);
-        existingQualification = {
-          departure_city: trulyMissing.has("departure_city") ? undefined : (existing.departure_city ?? undefined),
-          arrival_city: trulyMissing.has("arrival_city") ? undefined : (existing.arrival_city ?? undefined),
-          departure_date: trulyMissing.has("departure_date") ? undefined : (existing.departure_date ?? undefined),
-          return_date: existing.return_date ?? undefined,
-          passenger_count: trulyMissing.has("passenger_count") ? undefined : (existing.passenger_count ?? undefined),
-          trip_type: trulyMissing.has("trip_type") ? undefined : (existing.trip_type ?? undefined),
-          options: existing.options ?? undefined,
-          free_message: existing.free_message ?? undefined,
-        };
+        existingQualification = buildExistingQualification(existing);
       }
     }
 
@@ -104,33 +96,38 @@ export async function POST(request: Request): Promise<Response> {
       { model: modelId, timeoutMs: qualificationTimeoutMs },
       startedAt,
     );
-    // Provide existing departure_date to the LLM so it can infer the year for return_date
-    const contextHint = existingQualification.departure_date
-      ? `\nContexte déjà collecté (pour inférence uniquement) : departure_date="${existingQualification.departure_date}"${existingQualification.departure_city ? `, departure_city="${existingQualification.departure_city}"` : ""}${existingQualification.arrival_city ? `, arrival_city="${existingQualification.arrival_city}"` : ""}.`
+    const contextHint = Object.keys(existingQualification).length > 0
+      ? `\nÉtat déjà collecté : ${JSON.stringify(existingQualification)}.`
       : "";
 
-    const textResult = await withTimeout(
-      generateText({
-        model: openrouter(modelId),
-        system: NEOTRAVEL_SYSTEM_PROMPT,
-        prompt: `Extrait les informations de transport NOUVELLEMENT fournies dans ce message utilisateur.${contextHint}
+    const today = new Date();
+    const todayIso = today.toISOString().slice(0, 10);
 
-NORMALISATION (obligatoire) :
-- "X passagers" / "X personnes" / "X pax" → passenger_count: X (entier)
-- "on reviendra" / "on va revenir" / "retour le" / "aller-retour" / "trajet retour" → trip_type: "round_trip"
-- "aller simple" / "sans retour" / "juste l'aller" → trip_type: "one_way"
-- "Je veux aller à VILLE" / "on va à VILLE" → arrival_city: "VILLE"
-- "on part de VILLE" / "depuis VILLE" / "départ VILLE" → departure_city: "VILLE"
-- Si return_date est mentionnée sans année ET departure_date connue, complète l'année : "le 12 juin" + 2027 → "2027-06-12"
+    const { object: extractedDelta } = await withTimeout(
+      generateObject({
+        model: openrouter(modelId),
+        schema: ExtractionDeltaSchema,
+        system: NEOTRAVEL_SYSTEM_PROMPT,
+        prompt: `Extrait les informations de transport NOUVELLEMENT fournies dans ce message utilisateur.
+Date du jour : ${todayIso} (utilise-la uniquement pour convertir les dates en YYYY-MM-DD).${contextHint}
+
+SÉMANTIQUE MÉTIER :
+- Une localisation actuelle du prospect ou du groupe est la ville de départ, sauf s'il indique explicitement un autre départ.
+- Une destination annoncée est la ville d'arrivée.
+- Une correction explicite remplace seulement le champ concerné.
+- Retourne uniquement les champs réellement présents ou corrigés dans ce message ; ne répète pas l'état déjà collecté.
+
+DATES (toujours au format YYYY-MM-DD) :
+- Date relative ("dans 3 semaines", "le mois prochain", "vendredi prochain") → calcule la date absolue à partir de la date du jour.
+- Date sans année ("le 12 juin") → choisis la prochaine occurrence FUTURE par rapport à la date du jour.
+- return_date sans année reprend l'année de departure_date si connue.
+- N'invente jamais une date non mentionnée. Ne corrige pas une date "passée" — extrais-la telle quelle, la validation s'en charge.
 
 RÈGLES ABSOLUES :
 1. departure_city et arrival_city : noms de villes ÉCRITS TEXTUELLEMENT par l'utilisateur.
    INTERDIT : inférer depuis "le sud", "la côte", "la plage", "la montagne".
 2. "je ne sais pas" / "pas encore" / "j'hésite" → ce champ est ABSENT.
-3. Message sans information de transport concrète → retourne {}.
-
-Retourne UNIQUEMENT un objet JSON valide (tous champs optionnels, aucun markdown) :
-{"name":string,"organization":string,"email":string,"departure_city":string,"arrival_city":string,"departure_date":"YYYY-MM-DD","return_date":"YYYY-MM-DD","passenger_count":number,"trip_type":"one_way"|"round_trip","free_message":string}
+3. Message sans information de transport concrète → objet vide.
 
 Message : ${latestUserText}`,
         temperature: 0.1,
@@ -138,21 +135,36 @@ Message : ${latestUserText}`,
       }),
       qualificationTimeoutMs,
     );
-    const rawExtracted = stripNulls(extractJsonFromText(textResult.text) as Record<string, unknown>);
-    const normalizedDelta = normalizeExtraction(rawExtracted, existingQualification);
+    const deterministicFacts = extractTurnFacts(latestUserText, existingQualification, today);
+    const deterministicStops = detectIntermediateStops(latestUserText);
+    const normalizedDelta = normalizeExtraction(
+      { ...extractedDelta, ...deterministicFacts, ...deterministicStops },
+      existingQualification,
+    );
+    const mergedLead = LeadQualificationSchema.parse({
+      ...mergeLead(existingQualification, normalizedDelta),
+      free_message: latestUserText,
+    });
+
+    // Deterministic validation — sole authority on validity. Strips unusable
+    // values (so they re-appear as missing) and flags >85 pax for HUMAN_REVIEW.
+    const { sanitized, warnings, review } = validateLead(mergedLead, today);
+    const lead = sanitized;
+    const blocking = warnings.some((warning) => warning.blocking);
+    const missing = detectMissingFields(lead);
+
     logAgentEvent(requestId, "extraction_debug", {
-      raw: rawExtracted,
+      raw: extractedDelta,
+      deterministicFacts,
+      deterministicStops,
       normalized: normalizedDelta,
+      warnings: warnings.map((w) => w.code),
+      review,
+      missing: missing.missing_fields,
       existingState: Object.fromEntries(
         Object.entries(existingQualification).filter(([, v]) => v !== undefined),
       ),
     }, startedAt);
-    const lead = LeadQualificationSchema.parse({
-      ...existingQualification,
-      ...normalizedDelta,
-      free_message: (normalizedDelta.free_message as string | undefined) ?? latestUserText,
-    });
-    const missing = detectMissingFields(lead);
     logAgentEvent(
       requestId,
       "qualification_completed",
@@ -183,46 +195,58 @@ Message : ${latestUserText}`,
       tripType: (lead.trip_type ?? null) as "one_way" | "round_trip" | null,
     };
 
-    if (missing.status === "INCOMPLETE") {
-      const known = (Object.entries(lead) as [string, unknown][])
-        .filter(([, v]) => v !== undefined && v !== null && v !== "")
-        .map(([k, v]) => `${k}: ${String(v)}`)
-        .join(", ");
+    if (lead.has_intermediate_stop) {
+      const reason = "INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE";
+      logAgentEvent(
+        requestId,
+        "request_completed",
+        { status: "HUMAN_REVIEW", reason, leadId: leadResult.leadId },
+        startedAt,
+      );
+      return chatJson({
+        status: "HUMAN_REVIEW",
+        message: formatHumanReviewMessage(reason),
+        leadId: leadResult.leadId,
+        reviewReason: reason,
+        extractedFields,
+        warnings,
+      });
+    }
 
-      let conversationalMessage: string;
-      try {
-        const replyResult = await withTimeout(
-          generateText({
-            model: openrouter(modelId),
-            system: `Tu es l'assistant NeoTravel — transport de groupe premium en France.
-Ton rôle : aider les prospects à qualifier leur demande. Tu ne calcules jamais prix ni distance.
+    // >85 passengers: escalate, never re-ask. Keep the value, flip the lead to
+    // HUMAN_REVIEW so the quote endpoint refuses it.
+    if (review === "PAX_OVER_85") {
+      await markHumanReview(leadResult.leadId, "PAX_OVER_85");
+      logAgentEvent(
+        requestId,
+        "request_completed",
+        { status: "HUMAN_REVIEW", reason: "PAX_OVER_85", leadId: leadResult.leadId },
+        startedAt,
+      );
+      return chatJson({
+        status: "HUMAN_REVIEW",
+        message: formatHumanReviewMessage("PAX_OVER_85"),
+        leadId: leadResult.leadId,
+        reviewReason: "PAX_OVER_85",
+        extractedFields,
+        warnings,
+      });
+    }
 
-Informations déjà collectées : ${known || "aucune"}.
-Informations manquantes pour le devis : ${formatMissingFields(missing.missing_fields)}.
-
-Consignes :
-- Réponds en français, de façon chaleureuse et naturelle (2-4 phrases max).
-- Si l'utilisateur dit bonjour ou pose une question générale, réponds-y avant de guider vers le projet.
-- Si l'utilisateur demande des suggestions ou exemples, propose 2-3 trajets courants en France (Paris-Lyon, Bordeaux-Marseille, Nantes-Strasbourg) sans jamais mentionner de prix.
-- Pose UNE seule question pour obtenir une information manquante à la fois, de façon naturelle.
-- Reste dans le périmètre NeoTravel (transport groupe France). Refuse poliment toute demande hors contexte.`,
-            messages,
-            temperature: 0.65,
-            maxOutputTokens: 180,
-          }),
-          qualificationTimeoutMs,
-        );
-        conversationalMessage =
-          replyResult.text.trim() ||
-          `Pour votre devis, merci de préciser : ${formatMissingFields(missing.missing_fields)}.`;
-      } catch {
-        conversationalMessage = `Pour votre devis, merci de préciser : ${formatMissingFields(missing.missing_fields)}.`;
+    // A blocking warning (past/invalid date, return before departure, 0 pax) must
+    // never qualify, even if all 5 critical fields are otherwise present. Force the
+    // stored status to INCOMPLETE so calculateQuoteForLead rejects it server-side.
+    if (missing.status === "INCOMPLETE" || blocking) {
+      if (blocking && leadResult.status === "QUALIFIED") {
+        await markLeadIncomplete(leadResult.leadId, missing.missing_fields);
       }
+
+      const conversationalMessage = buildQualificationResponse(warnings, missing.missing_fields);
 
       logAgentEvent(
         requestId,
         "request_completed",
-        { status: "INCOMPLETE", leadId: leadResult.leadId },
+        { status: "INCOMPLETE", blocking, leadId: leadResult.leadId },
         startedAt,
       );
 
@@ -232,6 +256,7 @@ Consignes :
         leadId: leadResult.leadId,
         missingFields: missing.missing_fields,
         extractedFields,
+        warnings,
       });
     }
 
@@ -246,25 +271,7 @@ Consignes :
       .filter(Boolean)
       .join(", ");
 
-    let qualifiedMessage: string;
-    try {
-      const replyResult = await withTimeout(
-        generateText({
-          model: openrouter(modelId),
-          system: `Tu es l'assistant NeoTravel — transport de groupe premium en France.
-Tu viens de collecter toutes les informations nécessaires pour un devis.
-Trajet qualifié : ${qualifiedSummary || "informations complètes"}.
-Génère un message court (2-3 phrases) confirmant ce que tu as compris et invitant l'utilisateur à cliquer sur "Recevoir mon devis". Ne mentionne aucun prix ni distance.`,
-          messages,
-          temperature: 0.5,
-          maxOutputTokens: 120,
-        }),
-        qualificationTimeoutMs,
-      );
-      qualifiedMessage = replyResult.text.trim() || `Parfait, j'ai toutes les informations pour votre trajet (${qualifiedSummary}). Cliquez sur "Recevoir mon devis" pour obtenir votre estimation.`;
-    } catch {
-      qualifiedMessage = `Parfait, j'ai toutes les informations pour votre trajet (${qualifiedSummary}). Cliquez sur "Recevoir mon devis" pour obtenir votre estimation.`;
-    }
+    const qualifiedMessage = `Parfait, j'ai toutes les informations pour votre trajet (${qualifiedSummary}). Cliquez sur "Recevoir mon devis" pour obtenir votre estimation.`;
 
     logAgentEvent(
       requestId,
@@ -458,6 +465,8 @@ const HUMAN_REVIEW_MESSAGES: Record<string, string> = {
     "La date de départ fournie est invalide. Merci de la vérifier.",
   PAX_ZERO_OR_NEGATIVE:
     "Le nombre de passagers indiqué n'est pas valide. Merci de le préciser.",
+  INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE:
+    "Votre trajet comporte un arrêt intermédiaire. Notre équipe doit vérifier l'itinéraire avant de préparer le devis.",
 };
 
 function formatHumanReviewMessage(reason: string): string {
@@ -475,33 +484,6 @@ function extractLeadIdFromBody(body: unknown): string | undefined {
   return undefined;
 }
 
-function stripNulls(obj: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== null && v !== undefined));
-}
-
-const FIELD_LABELS: Record<string, string> = {
-  departure_city: "la ville de départ",
-  arrival_city: "la ville d'arrivée",
-  departure_date: "la date de départ",
-  passenger_count: "le nombre de passagers",
-  trip_type: "le type de trajet (aller simple ou aller-retour)",
-};
-
-function formatMissingFields(fields: readonly string[]): string {
-  const labels = fields.map((f) => FIELD_LABELS[f] ?? f);
-  if (labels.length === 1) return labels[0];
-  return `${labels.slice(0, -1).join(", ")} et ${labels[labels.length - 1]}`;
-}
-
-function extractJsonFromText(text: string): unknown {
-  const trimmed = text.trim();
-  try { return JSON.parse(trimmed); } catch {}
-  const block = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (block) { try { return JSON.parse(block[1].trim()); } catch {} }
-  const brace = trimmed.match(/\{[\s\S]*\}/);
-  if (brace) { try { return JSON.parse(brace[0]); } catch {} }
-  throw new Error(`AI_NO_JSON: model returned non-JSON response: ${trimmed.slice(0, 200)}`);
-}
 
 function extractRetryErrorDetails(error: unknown): Record<string, unknown> {
   if (!(error instanceof RetryError)) return {};

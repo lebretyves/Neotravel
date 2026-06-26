@@ -11,6 +11,7 @@ import {
 } from "../domain/schemas";
 import { calculateQuoteForLead } from "../quotes/quote-service";
 import { markHumanReview } from "../leads/lead-service";
+import { logAuditEvent } from "../audit/audit-service";
 import { createServerSupabaseClient } from "../supabase/server";
 import { containsPromptInjectionAttempt } from "./prompt";
 
@@ -39,7 +40,7 @@ export const HandoffHumanInputSchema = z.object({
 
 export const CreateOrUpdateLeadOutputSchema = z.object({
   leadId: z.string().uuid(),
-  status: z.enum(["QUALIFIED", "INCOMPLETE"]),
+  status: z.enum(["QUALIFIED", "INCOMPLETE", "HUMAN_REVIEW"]),
   missing_fields: z.array(z.string()),
 });
 
@@ -63,7 +64,7 @@ export const HandoffHumanOutputSchema = z.object({
 
 export type CreateOrUpdateLeadResult = {
   leadId: string;
-  status: Extract<LeadStatus, "QUALIFIED" | "INCOMPLETE">;
+  status: Extract<LeadStatus, "QUALIFIED" | "INCOMPLETE" | "HUMAN_REVIEW">;
   missing_fields: string[];
 };
 
@@ -89,18 +90,28 @@ export async function createOrUpdateLead(
 ): Promise<CreateOrUpdateLeadResult> {
   const lead = LeadQualificationSchema.parse(input.lead);
   const missing = detectMissingFields(lead);
+  const requiresHumanReview =
+    lead.has_intermediate_stop === true || (lead.intermediate_stops?.length ?? 0) > 0;
+  const status: CreateOrUpdateLeadResult["status"] = requiresHumanReview
+    ? "HUMAN_REVIEW"
+    : missing.status;
   const supabase = createServerSupabaseClient();
   const leadPayload = {
-    departure_city: lead.departure_city ?? "À compléter",
-    arrival_city: lead.arrival_city ?? "À compléter",
-    departure_date: lead.departure_date ?? "2099-01-01",
+    departure_city: lead.departure_city ?? null,
+    arrival_city: lead.arrival_city ?? null,
+    departure_date: lead.departure_date ?? null,
     return_date: lead.return_date ?? null,
-    passenger_count: lead.passenger_count ?? 1,
-    trip_type: lead.trip_type ?? "one_way",
+    passenger_count: lead.passenger_count ?? null,
+    trip_type: lead.trip_type ?? null,
+    has_intermediate_stop: requiresHumanReview,
+    intermediate_stops: lead.intermediate_stops ?? [],
     options: lead.options ?? {},
     free_message: lead.free_message ?? null,
-    status: missing.status,
+    status,
     missing_fields: missing.missing_fields,
+    ...(requiresHumanReview
+      ? { human_review_reason: "INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE" }
+      : {}),
   };
 
   let clientId: string | null = null;
@@ -147,9 +158,25 @@ export async function createOrUpdateLead(
       throw new Error(`Unable to update lead ${input.leadId}: ${error.message}`);
     }
 
+    await logAuditEvent({
+      entityType: "lead",
+      entityId: input.leadId,
+      action: "LEAD_UPDATED",
+      metadata: { status, missingFields: missing.missing_fields },
+    });
+
+    if (requiresHumanReview) {
+      await logAuditEvent({
+        entityType: "lead",
+        entityId: input.leadId,
+        action: "LEAD_MARKED_HUMAN_REVIEW",
+        metadata: { reason: "INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE" },
+      });
+    }
+
     return {
       leadId: input.leadId,
-      status: missing.status,
+      status,
       missing_fields: missing.missing_fields,
     };
   }
@@ -164,9 +191,25 @@ export async function createOrUpdateLead(
     throw new Error(`Unable to create lead: ${error.message}`);
   }
 
+  await logAuditEvent({
+    entityType: "lead",
+    entityId: data.id as string,
+    action: "LEAD_CREATED",
+    metadata: { status, missingFields: missing.missing_fields },
+  });
+
+  if (requiresHumanReview) {
+    await logAuditEvent({
+      entityType: "lead",
+      entityId: data.id as string,
+      action: "LEAD_MARKED_HUMAN_REVIEW",
+      metadata: { reason: "INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE" },
+    });
+  }
+
   return {
     leadId: data.id as string,
-    status: missing.status,
+    status,
     missing_fields: missing.missing_fields,
   };
 }

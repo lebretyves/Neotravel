@@ -19,6 +19,8 @@ function baseLead(overrides: Partial<LeadRecord> = {}): LeadRecord {
     return_date: null,
     passenger_count: 42,
     trip_type: "one_way",
+    has_intermediate_stop: false,
+    intermediate_stops: [],
     options: {},
     free_message: null,
     status: "QUALIFIED",
@@ -114,6 +116,26 @@ describe("calculateQuoteForLead", () => {
       leadId,
       "UNKNOWN_ROUTE_NO_DISTANCE",
     );
+    expect(dependencies.saveQuote).not.toHaveBeenCalled();
+  });
+
+  it("refuse un trajet avec arrêt sans résoudre la distance ni créer de quote", async () => {
+    const dependencies = buildDependencies(
+      baseLead({ has_intermediate_stop: true, intermediate_stops: ["Dijon"] }),
+    );
+
+    const result = await calculateQuoteForLead(leadId, dependencies);
+
+    expect(result).toEqual({
+      ok: false,
+      status: "HUMAN_REVIEW",
+      reason: "INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE",
+    });
+    expect(dependencies.markHumanReview).toHaveBeenCalledWith(
+      leadId,
+      "INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE",
+    );
+    expect(dependencies.resolveDistance).not.toHaveBeenCalled();
     expect(dependencies.saveQuote).not.toHaveBeenCalled();
   });
 

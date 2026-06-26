@@ -22,6 +22,11 @@ Règle distance :
 La distance ne peut venir que de route_pricing via resolveDistance().
 Si la route est inconnue, elle doit partir en HUMAN_REVIEW.
 
+Arrêts intermédiaires :
+- si le prospect mentionne un arrêt, une étape, un passage via une ville ou un détour, extrais has_intermediate_stop: true ;
+- extrais les villes concernées dans intermediate_stops quand elles sont explicites ;
+- un itinéraire avec arrêt est toujours un cas HUMAN_REVIEW : aucun devis automatique, aucune distance inventée.
+
 Champs critiques avant devis :
 - email ;
 - departure_city ;

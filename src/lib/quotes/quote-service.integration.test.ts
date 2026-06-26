@@ -211,6 +211,46 @@ describeIntegration("calculateQuoteForLead integration", () => {
     expect(quoteCountError).toBeNull();
     expect(count).toBe(0);
   });
+
+  it("marque un itinéraire avec arrêt en HUMAN_REVIEW sans créer de quote", async () => {
+    const supabase = createServerSupabaseClient();
+    const clientId = await createClientFixture();
+    const leadId = await createLeadFixture({
+      clientId,
+      passengerCount: 42,
+      intermediateStops: ["Dijon"],
+    });
+
+    const result = await calculateQuoteForLead(leadId, {
+      getRequestDate: () => isoDateDaysFromNow(0),
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      status: "HUMAN_REVIEW",
+      reason: "INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE",
+    });
+
+    const { data: lead, error: leadError } = await supabase
+      .from("leads")
+      .select("status, human_review_reason")
+      .eq("id", leadId)
+      .single();
+
+    expect(leadError).toBeNull();
+    expect(lead).toMatchObject({
+      status: "HUMAN_REVIEW",
+      human_review_reason: "INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE",
+    });
+
+    const { count, error: quoteCountError } = await supabase
+      .from("quotes")
+      .select("id", { count: "exact", head: true })
+      .eq("lead_id", leadId);
+
+    expect(quoteCountError).toBeNull();
+    expect(count).toBe(0);
+  });
 });
 
 async function createClientFixture(): Promise<string> {
@@ -229,7 +269,11 @@ async function createClientFixture(): Promise<string> {
   return clientId;
 }
 
-async function createLeadFixture(input: { clientId: string; passengerCount: number }): Promise<string> {
+async function createLeadFixture(input: {
+  clientId: string;
+  passengerCount: number;
+  intermediateStops?: string[];
+}): Promise<string> {
   const supabase = createServerSupabaseClient();
   const leadId = randomUUID();
   const { error } = await supabase.from("leads").insert({
@@ -240,6 +284,8 @@ async function createLeadFixture(input: { clientId: string; passengerCount: numb
     departure_date: isoDateDaysFromNow(120),
     passenger_count: input.passengerCount,
     trip_type: "one_way",
+    has_intermediate_stop: input.intermediateStops !== undefined,
+    intermediate_stops: input.intermediateStops ?? [],
     options: {},
     status: "QUALIFIED",
   });

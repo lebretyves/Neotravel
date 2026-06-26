@@ -3,12 +3,9 @@ import { runDemandExtraction } from "@/features/ai-orchestration/services/runDem
 import { qualifyDemand } from "@/features/demand/actions/qualifyDemand";
 import { validateDemandCompleteness } from "@/features/demand/services/validateDemandCompleteness";
 import { createHumanReview } from "@/features/human-review/services/createHumanReview";
-import { evaluateHumanReview } from "@/features/human-review/services/shouldEscalate";
-import { calculateQuote } from "@/features/quote/services/calculateQuote";
 import { scheduleFollowups } from "@/features/followups/services/scheduleFollowups";
 import { getDashboardKpis } from "@/features/dashboard/services/getDashboardKpis";
 import { listPricingRules, listRoutePricing } from "@/shared/lib/data/pricingRepository";
-import { resolveDistance } from "@/shared/lib/distance";
 import { auditActions, createAuditLog, logModelRun } from "@/shared/lib/audit";
 import type { DemandDraft } from "@/shared/types/lead";
 
@@ -112,51 +109,12 @@ export async function lookupPricingRulesTool() {
 
 export async function calculerDevisTool(input: unknown) {
   const parsed = QuoteToolSchema.parse(input);
-  const demand = toDemandDraft(parsed);
-  const completeness = validateDemandCompleteness(demand);
-
-  if (!completeness.complete) {
-    const output = { status: "INCOMPLETE", missingFields: completeness.missingFields.map(String) };
-    await logToolCall("calculer_devis", parsed, output, "blocked");
-    return output;
-  }
-
-  const humanReview = evaluateHumanReview({
-    ...demand,
-    confidence: parsed.confidence
-  });
-
-  if (humanReview.escalate) {
-    const distanceMayResolveUnknownRoute =
-      humanReview.reasons.length === 1 && humanReview.reasons[0] === "UNKNOWN_ROUTE_WITHOUT_CONTROLLED_DISTANCE";
-    if (!distanceMayResolveUnknownRoute) {
-      const output = await handoffHumanTool({ ...parsed, reasons: humanReview.reasons, reason: humanReview.reasons[0] });
-      await logToolCall("calculer_devis", parsed, output, "blocked");
-      return output;
-    }
-  }
-
-  const distance = await resolveDistance({
-    departureLabel: parsed.departureCity ?? "",
-    arrivalLabel: parsed.arrivalCity ?? "",
-    departureDate: parsed.departureDate ?? undefined
-  });
-
-  if ("status" in distance) {
-    const output = await handoffHumanTool({ ...parsed, reasons: [distance.reason], reason: distance.reason });
-    await logToolCall("calculer_devis", parsed, output, "blocked");
-    return output;
-  }
-
-  const output = calculateQuote({
-    departureCity: parsed.departureCity ?? undefined,
-    arrivalCity: parsed.arrivalCity ?? undefined,
-    departureDate: parsed.departureDate ?? undefined,
-    passengerCount: parsed.passengerCount ?? undefined,
-    options: parsed.options,
-    controlledDistanceKm: distance.distanceKm
-  });
-  await logToolCall("calculer_devis", parsed, output);
+  const output = {
+    status: "BLOCKED",
+    reason: "QUOTE_REQUIRES_STORED_LEAD",
+    message: "Le prix est calculé uniquement par calculateQuoteForLead() pour un lead enregistré.",
+  };
+  await logToolCall("calculer_devis", parsed, output, "blocked");
   return output;
 }
 
