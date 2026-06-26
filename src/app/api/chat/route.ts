@@ -24,6 +24,12 @@ export async function POST(request: Request): Promise<Response> {
     const messages = normalizeMessages(body);
     const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
     const latestUserText = getMessageText(latestUserMessage?.content);
+    const latestUserIndex = messages.lastIndexOf(latestUserMessage!);
+    const lastAssistantText = latestUserIndex > 0
+      ? getMessageText(
+          [...messages].slice(0, latestUserIndex).reverse().find((m) => m.role === "assistant")?.content
+        )
+      : "";
 
     logAgentEvent(
       requestId,
@@ -103,6 +109,10 @@ export async function POST(request: Request): Promise<Response> {
     const today = new Date();
     const todayIso = today.toISOString().slice(0, 10);
 
+    const conversationHint = lastAssistantText
+      ? `\nDernière question posée : "${lastAssistantText}"`
+      : "";
+
     // generateText (not generateObject): the configured free model does not support
     // OpenAI's response_format parameter, so structured-output requests fail outright.
     // We ask for raw JSON and parse it tolerantly (raw / fenced / embedded) instead.
@@ -111,7 +121,7 @@ export async function POST(request: Request): Promise<Response> {
         model: openrouter(modelId),
         system: NEOTRAVEL_SYSTEM_PROMPT,
         prompt: `Extrait les informations de transport NOUVELLEMENT fournies dans ce message utilisateur.
-Date du jour : ${todayIso} (utilise-la uniquement pour convertir les dates en YYYY-MM-DD).${contextHint}
+Date du jour : ${todayIso} (utilise-la uniquement pour convertir les dates en YYYY-MM-DD).${contextHint}${conversationHint}
 
 SÉMANTIQUE MÉTIER :
 - Une localisation actuelle du prospect ou du groupe est la ville de départ, sauf s'il indique explicitement un autre départ.
