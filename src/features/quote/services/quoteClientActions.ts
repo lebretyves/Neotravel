@@ -62,14 +62,15 @@ export async function acceptQuote(quoteId: string) {
     metadata: { leadId: quote.lead_id },
   });
 
-  // Load the lead's email for the n8n recap email
+  // Load the lead's email via the clients join (email is in clients, not leads)
   const supabase = createServerSupabaseClient();
   const { data: leadData } = await supabase
     .from("leads")
-    .select("email")
+    .select("clients(email)")
     .eq("id", quote.lead_id!)
     .maybeSingle();
-  const email = (leadData as { email?: string | null } | null)?.email ?? null;
+  const clientRow = (leadData as { clients?: { email?: string | null } | { email?: string | null }[] | null } | null)?.clients;
+  const email = (Array.isArray(clientRow) ? clientRow[0]?.email : clientRow?.email) ?? null;
 
   if (email && quote.quote_number) {
     const priceTtc = quote.price_ttc ?? 0;
