@@ -1,5 +1,17 @@
 import type { LeadQualification } from "../domain/schemas";
 
+const ROUND_TRIP_PATTERN =
+  /\baller[- /]retour\b|\baller\s+et\s+retour\b|\bon\s+reviendra\b|\btrajet\s+retour\b|\bvoyage\s+aller[- ]retour\b/iu;
+
+const ONE_WAY_PATTERN =
+  /\baller\s+simple\b|\bsans\s+retour\b|\bjuste\s+l['']aller\b|\btrajet\s+simple\b/iu;
+
+function parseTripType(message: string): LeadQualification["trip_type"] | undefined {
+  if (ROUND_TRIP_PATTERN.test(message)) return "round_trip";
+  if (ONE_WAY_PATTERN.test(message)) return "one_way";
+  return undefined;
+}
+
 const MONTHS: Record<string, number> = {
   janvier: 0,
   février: 1,
@@ -33,6 +45,11 @@ export function extractTurnFacts(
   if (!existing.passenger_count && existing.departure_date) {
     const passengerCount = parseStandalonePassengerCount(message);
     if (passengerCount) facts.passenger_count = passengerCount;
+  }
+
+  if (!existing.trip_type) {
+    const tripType = parseTripType(message);
+    if (tripType) facts.trip_type = tripType;
   }
 
   return facts;

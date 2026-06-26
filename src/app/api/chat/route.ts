@@ -1,9 +1,9 @@
 import { createOpenAI } from "@ai-sdk/openai";
-import { generateObject, NoObjectGeneratedError, RetryError, APICallError, type ModelMessage } from "ai";
+import { generateText, NoObjectGeneratedError, RetryError, APICallError, type ModelMessage } from "ai";
 
 import { containsPromptInjectionAttempt, NEOTRAVEL_SYSTEM_PROMPT } from "../../../lib/ai/prompt";
 import { chatJson, type ExtractedFields } from "../../../lib/ai/chat-response";
-import { ExtractionDeltaSchema, LeadQualificationSchema, type LeadQualification } from "../../../lib/domain/schemas";
+import { ExtractionDeltaSchema, LeadQualificationSchema, type LeadQualification, type ExtractionDelta } from "../../../lib/domain/schemas";
 import { createOrUpdateLead, detectMissingFields } from "../../../lib/ai/tools";
 import { getLeadById, markHumanReview, markLeadIncomplete } from "../../../lib/leads/lead-service";
 import { normalizeExtraction } from "../../../lib/ai/normalize-extraction";
@@ -103,10 +103,12 @@ export async function POST(request: Request): Promise<Response> {
     const today = new Date();
     const todayIso = today.toISOString().slice(0, 10);
 
-    const { object: extractedDelta } = await withTimeout(
-      generateObject({
+    // generateText (not generateObject): the configured free model does not support
+    // OpenAI's response_format parameter, so structured-output requests fail outright.
+    // We ask for raw JSON and parse it tolerantly (raw / fenced / embedded) instead.
+    const textResult = await withTimeout(
+      generateText({
         model: openrouter(modelId),
-        schema: ExtractionDeltaSchema,
         system: NEOTRAVEL_SYSTEM_PROMPT,
         prompt: `Extrait les informations de transport NOUVELLEMENT fournies dans ce message utilisateur.
 Date du jour : ${todayIso} (utilise-la uniquement pour convertir les dates en YYYY-MM-DD).${contextHint}
@@ -127,7 +129,10 @@ RÈGLES ABSOLUES :
 1. departure_city et arrival_city : noms de villes ÉCRITS TEXTUELLEMENT par l'utilisateur.
    INTERDIT : inférer depuis "le sud", "la côte", "la plage", "la montagne".
 2. "je ne sais pas" / "pas encore" / "j'hésite" → ce champ est ABSENT.
-3. Message sans information de transport concrète → objet vide.
+3. Message sans information de transport concrète → retourne {}.
+
+Retourne UNIQUEMENT un objet JSON valide (aucun markdown, aucun texte autour), avec seulement les champs présents dans ce message parmi :
+{"name":string,"organization":string,"email":string,"departure_city":string,"arrival_city":string,"departure_date":"YYYY-MM-DD","return_date":"YYYY-MM-DD","passenger_count":number,"trip_type":"one_way"|"round_trip"}
 
 Message : ${latestUserText}`,
         temperature: 0.1,
@@ -135,6 +140,8 @@ Message : ${latestUserText}`,
       }),
       qualificationTimeoutMs,
     );
+    const parseResult = ExtractionDeltaSchema.safeParse(extractJsonFromText(textResult.text));
+    const extractedDelta: ExtractionDelta = parseResult.success ? parseResult.data : {};
     const deterministicFacts = extractTurnFacts(latestUserText, existingQualification, today);
     const deterministicStops = detectIntermediateStops(latestUserText);
     const normalizedDelta = normalizeExtraction(
@@ -191,6 +198,7 @@ Message : ${latestUserText}`,
       departureCity: lead.departure_city ?? null,
       arrivalCity: lead.arrival_city ?? null,
       departureDate: lead.departure_date ?? null,
+      returnDate: lead.return_date ?? null,
       passengerCount: lead.passenger_count ?? null,
       tripType: (lead.trip_type ?? null) as "one_way" | "round_trip" | null,
     };
@@ -403,6 +411,34 @@ function getMessageText(content: unknown): string {
   return "";
 }
 
+
+// Tolerant JSON extraction: free models often wrap JSON in prose or markdown fences.
+// Returns {} on anything unparseable so the deterministic layers still run.
+function extractJsonFromText(text: string): unknown {
+  const trimmed = text.trim();
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // fall through
+  }
+  const block = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (block) {
+    try {
+      return JSON.parse(block[1].trim());
+    } catch {
+      // fall through
+    }
+  }
+  const brace = trimmed.match(/\{[\s\S]*\}/);
+  if (brace) {
+    try {
+      return JSON.parse(brace[0]);
+    } catch {
+      // fall through
+    }
+  }
+  return {};
+}
 
 function getQualificationTimeoutMs(): number {
   const configured = Number(process.env.AGENT_QUALIFICATION_TIMEOUT_MS);

@@ -62,6 +62,7 @@ export type ExtractedFields = {
   departureCity: string | null;
   arrivalCity: string | null;
   departureDate: string | null;
+  returnDate: string | null;
   passengerCount: number | null;
   tripType: "one_way" | "round_trip" | null;
 };

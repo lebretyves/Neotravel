@@ -183,6 +183,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
   const [isSending, setIsSending] = useState(false);
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
   const [qualifiedLeadId, setQualifiedLeadId] = useState<string | null>(null);
+  const [chatHumanReview, setChatHumanReview] = useState(false);
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [chatExtracted, setChatExtracted] = useState<{
     departureCity: string | null;
@@ -306,6 +307,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
           departureCity: string | null;
           arrivalCity: string | null;
           departureDate: string | null;
+          returnDate: string | null;
           passengerCount: number | null;
           tripType: "one_way" | "round_trip" | null;
         };
@@ -313,13 +315,14 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
 
       if (data.leadId) setCurrentLeadId(data.leadId);
       if (data.status === "QUALIFIED" && data.leadId) setQualifiedLeadId(data.leadId);
+      if (data.status === "HUMAN_REVIEW") setChatHumanReview(true);
       const ef = data.extractedFields;
       if (ef) {
         setChatExtracted((prev) => ({
           departureCity: ef.departureCity ?? prev.departureCity,
           arrivalCity: ef.arrivalCity ?? prev.arrivalCity,
           departureDate: ef.departureDate ?? prev.departureDate,
-          returnDate: prev.returnDate,
+          returnDate: ef.returnDate ?? prev.returnDate,
           passengerCount: ef.passengerCount ?? prev.passengerCount,
           tripType: ef.tripType ?? prev.tripType,
         }));
@@ -697,7 +700,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
             />
           </form>
           <div className={styles.chatActions}>
-            {requiresHumanReview ? (
+            {chatHumanReview ? (
               <Link className={styles.humanReviewButton} href="/contact">
                 Transmettre a un conseiller
               </Link>
