@@ -29,7 +29,11 @@ export function getIntegrationsStatus(): IntegrationStatus[] {
 
  const supabaseConfigured =
   isSet(env.NEXT_PUBLIC_SUPABASE_URL) && isSet(env.NEXT_PUBLIC_SUPABASE_ANON_KEY) && isSet(env.SUPABASE_SERVICE_ROLE_KEY);
- const aiConnected = isSet(env.AI_PROVIDER) && env.AI_PROVIDER !== "mock" && isSet(env.OPENAI_API_KEY);
+ const aiProvider = env.AI_PROVIDER ?? "mock";
+ const aiConnected =
+  isSet(aiProvider) &&
+  aiProvider !== "mock" &&
+  (aiProvider === "vercel-ai-gateway" ? isSet(env.AI_GATEWAY_API_KEY) : isSet(env.OPENAI_API_KEY));
  const n8nConnected = isSet(env.N8N_BASE_URL);
  const mapsConnected = isSet(env.OSRM_BASE_URL) || isSet(env.OPENROUTESERVICE_API_KEY);
 
@@ -54,14 +58,16 @@ export function getIntegrationsStatus(): IntegrationStatus[] {
   },
   {
    id: "ai",
-   name: "IA (OpenAI)",
+   name: "IA (Vercel / Mistral)",
    description: "Extraction et qualification automatiques des demandes par l'agent.",
    connected: aiConnected,
    detail: aiConnected ? `Connecte (${env.AI_MODEL ?? "modele par defaut"}).` : "Mode mock : reponses simulees.",
    fields: withStatus([
-    { key: "AI_PROVIDER", label: "Fournisseur", placeholder: "openai" },
-    { key: "AI_MODEL", label: "Modèle", placeholder: "gpt-4o-mini" },
-    { key: "OPENAI_API_KEY", label: "Clé API OpenAI", secret: true }
+    { key: "AI_PROVIDER", label: "Fournisseur", placeholder: "vercel-ai-gateway" },
+    { key: "AI_MODEL", label: "Modele", placeholder: "mistral/mistral-small" },
+    { key: "AI_GATEWAY_API_KEY", label: "Cle Vercel AI Gateway", secret: true },
+    { key: "AI_BASE_URL", label: "URL Gateway", placeholder: "https://ai-gateway.vercel.sh/v1" },
+    { key: "OPENAI_API_KEY", label: "Cle OpenAI directe", secret: true }
    ])
   },
   {
@@ -101,6 +107,9 @@ export const ALLOWED_ENV_KEYS = new Set([
  "NEXT_PUBLIC_DEMO_MODE",
  "AI_PROVIDER",
  "AI_MODEL",
+ "AI_GATEWAY_API_KEY",
+ "AI_BASE_URL",
+ "OPENAI_BASE_URL",
  "OPENAI_API_KEY",
  "N8N_BASE_URL",
  "N8N_WEBHOOK_SECRET",

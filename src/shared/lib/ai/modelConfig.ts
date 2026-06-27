@@ -1,4 +1,4 @@
-export type AiProviderName = "mock" | "openai";
+export type AiProviderName = "mock" | "openai" | "vercel-ai-gateway";
 
 export const modelConfig = {
  provider: (process.env.AI_PROVIDER ?? "mock") as AiProviderName,

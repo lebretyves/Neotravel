@@ -1,5 +1,6 @@
 import { isDemoMode } from "@/shared/lib/demo/demoMode";
 import { modelConfig, type AiProviderName } from "./modelConfig";
+import { hasAiApiKey } from "./openaiClient";
 
 export type ModelProvider = {
  provider: AiProviderName;
@@ -10,8 +11,8 @@ export type ModelProvider = {
 
 export function getModelProvider(): ModelProvider {
  const provider = modelConfig.provider;
- const hasOpenAiKey = Boolean(process.env.OPENAI_API_KEY);
- const forceMock = isDemoMode() || provider === "mock" || !hasOpenAiKey;
+ const canUseConfiguredProvider = provider === "openai" || provider === "vercel-ai-gateway";
+ const forceMock = isDemoMode() || provider === "mock" || !canUseConfiguredProvider || !hasAiApiKey(provider);
 
  if (forceMock) {
   return {
@@ -26,6 +27,6 @@ export function getModelProvider(): ModelProvider {
   provider,
   model: modelConfig.model,
   mode: "real",
-  canUseRealModel: provider === "openai"
+  canUseRealModel: canUseConfiguredProvider
  };
 }
