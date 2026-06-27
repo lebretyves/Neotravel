@@ -8,7 +8,7 @@ export function PublicPageHeader() {
   return (
     <header className={styles.header}>
       <Link className={styles.logo} href="/" aria-label="NeoTravel accueil">
-        <Image src="/logo-neotravel-v12.svg" alt="" width={250} height={72} priority />
+        <Image src="/logo-neotravel.svg" alt="" width={250} height={72} priority />
       </Link>
       <div className={styles.headerActions}>
         <nav className={styles.nav} aria-label="Navigation publique">

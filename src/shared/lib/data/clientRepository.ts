@@ -71,18 +71,24 @@ export async function ensureClientForLead(input: {
  }
 
  const supabase = createSupabaseAdminClient();
+ const { data: existingClient, error: lookupError } = await supabase
+  .from("clients")
+  .select("id, organization, contact_name, email, phone, active, created_at")
+  .eq("email", input.email)
+  .maybeSingle();
+
+ if (lookupError) throw lookupError;
+ if (existingClient) return toClient(existingClient as ClientRow);
+
  const { data, error } = await supabase
   .from("clients")
-  .upsert(
-   {
-    organization: input.organization,
-    contact_name: input.contactName ?? null,
-    email: input.email,
-    phone: input.phone ?? null,
-    active: true
-   },
-   { onConflict: "email" }
-  )
+  .insert({
+   organization: input.organization,
+   contact_name: input.contactName ?? null,
+   email: input.email,
+   phone: input.phone ?? null,
+   active: true
+  })
   .select("id, organization, contact_name, email, phone, active, created_at")
   .single();
 

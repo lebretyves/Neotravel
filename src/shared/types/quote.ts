@@ -32,7 +32,7 @@ export type Quote = {
  id: string;
  leadId: string;
  calculation: QuoteCalculation;
- status: "QUOTE_READY" | "QUOTE_SENT" | "ACCEPTED" | "REFUSED";
+ status: "QUOTE_READY" | "QUOTE_SENT" | "ACCEPTED" | "REFUSED" | "CLOSED";
  createdAt?: string;
  updatedAt?: string | null;
  sentAt?: string | null;

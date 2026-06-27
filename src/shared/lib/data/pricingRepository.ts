@@ -23,27 +23,38 @@ type RoutePricingRow = {
  version: number;
 };
 
+type PricingMatrixRow = {
+ version: string;
+ is_active: boolean;
+ rules: Record<string, unknown>;
+};
+
+function pricingMatrixToRules(matrix: PricingMatrixRow): PricingRuleRow[] {
+ return Object.entries(matrix.rules ?? {}).map(([key, value]) => ({
+  key,
+  ruleType: "matrix",
+  label: key,
+  value,
+  unit: typeof value === "number" && key.toLowerCase().includes("rate") ? "rate" : "eur",
+  active: matrix.is_active,
+  version: Number.parseInt(matrix.version.replace(/\D/g, ""), 10) || 1,
+  metadata: { source: "pricing_matrices", matrixVersion: matrix.version }
+ }));
+}
+
 export async function listPricingRules(): Promise<PricingRuleRow[]> {
  if (shouldUseDemoData()) return demoStore.listPricingRules();
 
  const supabase = createSupabaseAdminClient();
  const { data, error } = await supabase
-  .from("pricing_rules")
-  .select("rule_key, rule_type, label, value, unit, active, version, metadata")
-  .order("rule_key", { ascending: true })
-  .order("version", { ascending: false });
+  .from("pricing_matrices")
+  .select("version, is_active, rules")
+  .order("is_active", { ascending: false })
+  .order("created_at", { ascending: false })
+  .limit(1);
 
  if (error) throw error;
- return data.map((rule) => ({
-  key: rule.rule_key,
-  ruleType: rule.rule_type,
-  label: rule.label,
-  value: rule.value,
-  unit: rule.unit,
-  active: rule.active,
-  version: rule.version,
-  metadata: rule.metadata
- }));
+ return ((data ?? []) as PricingMatrixRow[]).flatMap(pricingMatrixToRules);
 }
 
 export async function listRoutePricing(): Promise<RoutePricingRow[]> {
@@ -62,8 +73,8 @@ export async function listRoutePricing(): Promise<RoutePricingRow[]> {
   departureCity: route.departure_city,
   arrivalCity: route.arrival_city,
   distanceKm: route.distance_km,
-  basePriceEur: route.base_price_eur,
-  active: route.active,
-  version: route.version
+  basePriceEur: route.base_price_eur ?? 0,
+  active: route.active ?? true,
+  version: route.version ?? 1
  }));
 }

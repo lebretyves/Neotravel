@@ -8,11 +8,21 @@ type FollowupRow = {
  lead_id: string;
  quote_id: string | null;
  channel: "email";
- status: Followup["status"];
+ status: string;
  scheduled_at: string;
  created_at?: string | null;
- updated_at?: string | null;
 };
+
+function fromDatabaseFollowupStatus(status: string): Followup["status"] {
+ if (status === "scheduled") return "SCHEDULED";
+ if (status === "sent") return "SENT";
+ return "SENT";
+}
+
+function toDatabaseFollowupStatus(status?: Followup["status"]) {
+ if (status === "SENT" || status === "OPENED" || status === "REPLIED") return "sent";
+ return "scheduled";
+}
 
 function toFollowup(row: FollowupRow): Followup {
  return {
@@ -20,14 +30,14 @@ function toFollowup(row: FollowupRow): Followup {
   leadId: row.lead_id,
   quoteId: row.quote_id ?? undefined,
   channel: row.channel,
-  status: row.status,
+  status: fromDatabaseFollowupStatus(row.status),
   dueAt: row.scheduled_at,
   createdAt: row.created_at ?? undefined,
-  updatedAt: row.updated_at ?? null
+  updatedAt: null
  };
 }
 
-const followupSelection = "id, lead_id, quote_id, channel, status, scheduled_at, created_at, updated_at";
+const followupSelection = "id, lead_id, quote_id, channel, status, scheduled_at, created_at";
 
 export async function createFollowupRecord(input: Parameters<typeof demoStore.createFollowup>[0]) {
  if (shouldUseDemoData()) return demoStore.createFollowup(input);
@@ -39,7 +49,7 @@ export async function createFollowupRecord(input: Parameters<typeof demoStore.cr
    lead_id: input.leadId,
    quote_id: input.quoteId ?? null,
    channel: input.channel,
-   status: input.status ?? "SCHEDULED",
+   status: toDatabaseFollowupStatus(input.status),
    scheduled_at: input.dueAt
   })
   .select(followupSelection)

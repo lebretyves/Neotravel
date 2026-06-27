@@ -21,7 +21,7 @@ async function requireQuote(quoteId: string) {
 }
 
 function assertQuoteActionable(status: string) {
- if (status === "ACCEPTED" || status === "REFUSED") {
+ if (status === "ACCEPTED" || status === "REFUSED" || status === "CLOSED") {
   throw new AppError("Devis deja finalise.", "QUOTE_FINALIZED");
  }
 }

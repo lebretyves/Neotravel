@@ -23,6 +23,12 @@ const noStoreHeaders = [
 
 const nextConfig: NextConfig = {
  poweredByHeader: false,
+ async redirects() {
+  return [
+   { source: "/connexion", destination: "/", permanent: false },
+   { source: "/client/connexion", destination: "/", permanent: false }
+  ];
+ },
  async headers() {
   return [
    { source: "/:path*", headers: securityHeaders },

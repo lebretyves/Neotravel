@@ -22,23 +22,6 @@ function toCamel(row: Record<string, unknown>): DistanceCacheEntry {
  };
 }
 
-function toSnake(input: DistanceCacheEntry) {
- return {
-  departure_label: input.departureLabel,
-  arrival_label: input.arrivalLabel,
-  departure_normalized: input.departureNormalized,
-  arrival_normalized: input.arrivalNormalized,
-  distance_km: input.distanceKm,
-  duration_minutes: input.durationMinutes,
-  provider: input.provider,
-  source: input.source,
-  provider_status: input.providerStatus,
-  confidence: input.confidence,
-  calculated_at: input.calculatedAt,
-  expires_at: input.expiresAt
- };
-}
-
 export async function findDistanceCache(departureLabel: string, arrivalLabel: string) {
  const departure = normalizeLocationLabel(departureLabel);
  const arrival = normalizeLocationLabel(arrivalLabel);
@@ -47,29 +30,34 @@ export async function findDistanceCache(departureLabel: string, arrivalLabel: st
 
  const supabase = createSupabaseAdminClient();
  const { data, error } = await supabase
-  .from("distance_cache")
-  .select("*")
-  .or(
-   `and(departure_normalized.eq.${departure},arrival_normalized.eq.${arrival}),and(departure_normalized.eq.${arrival},arrival_normalized.eq.${departure})`
-  )
-  .order("calculated_at", { ascending: false })
+  .from("route_pricing")
+  .select("id, departure_city, arrival_city, distance_km, distance_source, distance_status, created_at")
+  .or(`and(departure_city.ilike.${departureLabel},arrival_city.ilike.${arrivalLabel}),and(departure_city.ilike.${arrivalLabel},arrival_city.ilike.${departureLabel})`)
   .limit(1)
   .maybeSingle();
 
  if (error) throw error;
- return data ? toCamel(data) : null;
+ if (!data) return null;
+
+ const now = new Date().toISOString();
+ return toCamel({
+  id: data.id,
+  departure_label: data.departure_city,
+  arrival_label: data.arrival_city,
+  departure_normalized: departure,
+  arrival_normalized: arrival,
+  distance_km: data.distance_km,
+  duration_minutes: null,
+  provider: "manual",
+  source: data.distance_source ?? "seed",
+  provider_status: data.distance_status ?? "resolved",
+  confidence: 1,
+  calculated_at: data.created_at ?? now,
+  expires_at: now
+ });
 }
 
 export async function createDistanceCache(input: DistanceCacheEntry) {
  if (shouldUseDemoData()) return demoStore.createDistanceCache(input);
-
- const supabase = createSupabaseAdminClient();
- const { data, error } = await supabase
-  .from("distance_cache")
-  .upsert(toSnake(input), { onConflict: "departure_normalized,arrival_normalized" })
-  .select("*")
-  .single();
-
- if (error) throw error;
- return toCamel(data);
+ return input;
 }

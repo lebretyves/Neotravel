@@ -7,6 +7,7 @@ import { listFollowups, listLeads, listQuotes } from "@/shared/lib/data";
 import { getDataMode } from "@/shared/lib/demo/demoMode";
 import type { Followup } from "@/shared/types/followup";
 import type { Lead } from "@/shared/types/lead";
+import type { Quote } from "@/shared/types/quote";
 import styles from "./dashboard.module.css";
 import { AutomationWorkflowsManager } from "./AutomationWorkflowsManager";
 import { CardList, DashboardHeader, DataTable, KpiGrid, Note, Panel } from "./DashboardPageKit";
@@ -28,9 +29,37 @@ function nextFollowup(leadId: string, followups: Followup[]) {
 }
 
 const PRIORITY_STATUSES = new Set(["NEW", "INCOMPLETE", "HUMAN_REVIEW"]);
+const QUALIFIED_LEAD_STATUSES = new Set<Lead["status"]>([
+ "QUALIFIED",
+ "HIGH_VALUE",
+ "QUOTE_READY",
+ "QUOTE_SENT",
+ "FOLLOWUP_1",
+ "FOLLOWUP_2",
+ "FOLLOWUP_SCHEDULED",
+ "WON"
+]);
 
-export async function CommercialLeadsPage() {
+function filterLeadsByStatus(leads: Lead[], status?: string) {
+ if (status === "qualified") return leads.filter((lead) => QUALIFIED_LEAD_STATUSES.has(lead.status));
+ return leads;
+}
+
+function filterQuotesByStatus(quotes: Quote[], status?: string) {
+ if (status === "open") return quotes.filter((quote) => quote.status === "QUOTE_READY" || quote.status === "QUOTE_SENT");
+ if (status === "accepted") return quotes.filter((quote) => quote.status === "ACCEPTED");
+ return quotes;
+}
+
+function filterFollowupsByStatus(followups: Followup[], status?: string) {
+ if (status !== "overdue") return followups;
+ const now = Date.now();
+ return followups.filter((followup) => followup.status === "SCHEDULED" && new Date(followup.dueAt).getTime() < now);
+}
+
+export async function CommercialLeadsPage({ status }: { status?: string }) {
  const [leads, followups] = await Promise.all([listLeads(), listFollowups()]);
+ const visibleLeads = filterLeadsByStatus(leads, status);
  const toTreat = leads.filter((lead) => PRIORITY_STATUSES.has(lead.status)).length;
 
  return (
@@ -53,13 +82,13 @@ export async function CommercialLeadsPage() {
     title="Toutes les demandes"
     subtitle="Mettez une demande « À valider » : elle apparaît aussitôt dans Validation humaine et dans l'Agenda."
    >
-    {leads.length === 0 ? (
-     <Note>Aucune demande pour l&apos;instant.</Note>
+    {visibleLeads.length === 0 ? (
+     <Note>Aucune demande pour ce filtre.</Note>
     ) : (
      <DataTable
       columns={["Client", "Trajet", "Statut", "Priorité", "Prochaine relance", "Fiabilité"]}
       columnsTemplate="1.2fr 1fr 1fr .8fr 1fr .6fr"
-      rows={leads.map((lead) => ({
+      rows={visibleLeads.map((lead) => ({
        cells: [
         lead.organization ?? "Organisation manquante",
         routeOf(lead),
@@ -131,8 +160,9 @@ export async function HumanReviewDashboardPage() {
  );
 }
 
-export async function QuotesDashboardPage() {
+export async function QuotesDashboardPage({ status }: { status?: string }) {
  const [quotes, leads] = await Promise.all([listQuotes(), listLeads()]);
+ const visibleQuotes = filterQuotesByStatus(quotes, status);
  const leadById = new Map(leads.map((lead) => [lead.id, lead]));
  const quoteTotal = quotes.reduce((sum, quote) => sum + quote.calculation.priceTtc, 0);
 
@@ -151,13 +181,13 @@ export async function QuotesDashboardPage() {
     ]}
    />
    <Panel title="Propositions">
-    {quotes.length === 0 ? (
-     <Note>Aucun devis pour l&apos;instant. Générez un devis depuis une demande qualifiée.</Note>
+    {visibleQuotes.length === 0 ? (
+     <Note>Aucun devis pour ce filtre.</Note>
     ) : (
      <DataTable
       columns={["Devis", "Client", "Montant", "Statut", "Action"]}
       columnsTemplate="1fr 1.2fr .9fr 1fr .8fr"
-      rows={quotes.map((quote) => {
+      rows={visibleQuotes.map((quote) => {
        const lead = leadById.get(quote.leadId);
        return {
         cells: [
@@ -178,8 +208,9 @@ export async function QuotesDashboardPage() {
  );
 }
 
-export async function FollowupsDashboardPage() {
+export async function FollowupsDashboardPage({ status }: { status?: string }) {
  const [followups, leads] = await Promise.all([listFollowups(), listLeads()]);
+ const visibleFollowups = filterFollowupsByStatus(followups, status);
  const leadById = new Map(leads.map((lead) => [lead.id, lead]));
  const scheduled = followups.filter((followup) => followup.status === "SCHEDULED").length;
 
@@ -194,13 +225,13 @@ export async function FollowupsDashboardPage() {
     ]}
    />
    <Panel title="Planning des relances" subtitle="Chaque relance apparaît aussi dans l'Agenda à sa date d'échéance.">
-    {followups.length === 0 ? (
-     <Note>Aucune relance programmée pour l&apos;instant.</Note>
+    {visibleFollowups.length === 0 ? (
+     <Note>Aucune relance pour ce filtre.</Note>
     ) : (
      <DataTable
       columns={["Client", "Devis", "Date", "Canal", "Statut"]}
       columnsTemplate="1.2fr 1fr .9fr .8fr 1fr"
-      rows={followups.map((followup) => {
+      rows={visibleFollowups.map((followup) => {
        const lead = leadById.get(followup.leadId);
        return {
         cells: [
