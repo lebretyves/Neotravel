@@ -616,7 +616,7 @@ const supplementalPhrases = {
   "Coordonnees": "Contact details",
   "Qualification conversationnelle": "Conversational qualification",
   "Progression de la demande prospect": "Prospect request progress",
-  "NeoTravel IA": "NeoTravel 智能助手",
+  "NeoTravel IA": "NeoTravel AI",
   "Depart": "Departure",
   "Arrivee": "Arrival",
   "Retour": "Return",
