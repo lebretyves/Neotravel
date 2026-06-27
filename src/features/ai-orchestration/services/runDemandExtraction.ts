@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { DemandDraft } from "@/shared/types/lead";
-import { logModelRun } from "@/shared/lib/audit";
+import { logModelRun, type LogModelRunInput } from "@/shared/lib/audit";
 import { getModelProvider } from "@/shared/lib/ai/modelProvider";
 import { getOpenAIClient } from "@/shared/lib/ai/openaiClient";
 import { modelConfig } from "@/shared/lib/ai/modelConfig";
@@ -19,6 +19,14 @@ const AiDemandExtractionSchema = z.object({
 });
 
 type AiDemandExtraction = z.infer<typeof AiDemandExtractionSchema>;
+
+async function safeLogModelRun(input: LogModelRunInput) {
+ try {
+  await logModelRun(input);
+ } catch (error) {
+  console.error("[NeoTravel] model run audit logging failed", error);
+ }
+}
 
 function nonEmptyString(value: unknown) {
  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
@@ -128,7 +136,7 @@ export async function runDemandExtraction(message: string): Promise<DemandDraft>
  const provider = getModelProvider();
 
  if (!provider.canUseRealModel) {
-  await logModelRun({
+  await safeLogModelRun({
    purpose: "extract_demand",
    provider: "mock",
    model: "mock-extractor",
@@ -163,7 +171,7 @@ export async function runDemandExtraction(message: string): Promise<DemandDraft>
   const parsed = AiDemandExtractionSchema.safeParse(extractJsonFromText(content));
   const output = mergeDemandDraft(message, fallback, parsed.success ? parsed.data : {});
 
-  await logModelRun({
+  await safeLogModelRun({
    purpose: "extract_demand",
    provider: provider.provider,
    model: provider.model,
@@ -178,7 +186,7 @@ export async function runDemandExtraction(message: string): Promise<DemandDraft>
 
   return output;
  } catch (error) {
-  await logModelRun({
+  await safeLogModelRun({
    purpose: "extract_demand",
    provider: provider.provider,
    model: provider.model,
