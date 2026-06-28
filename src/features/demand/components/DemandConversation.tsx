@@ -161,7 +161,8 @@ function buildInitialDemandView(initialDemand: InitialDemand) {
  const arrival = clean(initialDemand.arrival);
  const departureDate = formatDate(initialDemand.departureDate);
  const returnDate = formatDate(initialDemand.returnDate);
- const tripType = initialDemand.tripType === "one_way" ? "Aller simple" : "Aller-retour";
+ const tripType =
+  initialDemand.tripType === "one_way" ? "Aller simple" : initialDemand.tripType === "round_trip" ? "Aller-retour" : "";
 
  return {
   departure,
@@ -227,7 +228,8 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
    departureDate: initialDemand.departureDate?.trim() || null,
    returnDate: initialDemand.returnDate?.trim() || null,
    passengerCount: Number.isFinite(Number(initialDemandView.passengers)) ? Number(initialDemandView.passengers) : null,
-   tripType: hasInitialDemand ? (initialDemand.tripType === "one_way" ? "one_way" : "round_trip") : null,
+   tripType:
+    initialDemand.tripType === "one_way" ? "one_way" : initialDemand.tripType === "round_trip" ? "round_trip" : null,
    options: initialDemandView.options
   }),
   [initialDemandView, hasInitialDemand, initialDemand.departureDate, initialDemand.returnDate, initialDemand.tripType]
@@ -280,9 +282,18 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
   ["Depart", demand.departure || "En attente"],
   ["Arrivee", demand.arrival || "En attente"],
   ["Date", demand.departureDate || "En attente"],
-  ["Retour", hasDemand && demand.tripType === "Aller-retour" ? demand.returnDate || "En attente" : "Non"],
+  [
+   "Retour",
+   hasDemand
+    ? demand.tripType === "Aller-retour"
+      ? demand.returnDate || "En attente"
+      : demand.tripType === "Aller simple"
+       ? "Non"
+       : "En attente"
+    : "Non"
+  ],
   ["Passagers", demand.passengers || "En attente"],
-  ["Type", hasDemand ? demand.tripType : "En attente"],
+  ["Type", hasDemand && demand.tripType ? demand.tripType : "En attente"],
   ["Options", demand.options.join(", ") || "Aucune"]
  ];
  const demoOrganization = "Alpha Conseil";
@@ -711,7 +722,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
         </h2>
        </div>
        <span>
-        {routePreview ? (
+        {routePreview?.distanceKm ? (
          `${routePreview.distanceKm} km`
         ) : routeStatus === "loading" ? (
          <span data-i18n-key="Calcul...">Calcul...</span>
