@@ -47,16 +47,20 @@ const HumanReviewToolSchema = DemandToolSchema.partial().extend({
 type DemandToolInput = z.infer<typeof DemandToolSchema>;
 
 async function logToolCall(toolName: string, input: unknown, output: unknown, status: "mock" | "blocked" = "mock") {
- await logModelRun({
-  purpose: "tool_call",
-  provider: "mock",
-  model: `tool:${toolName}`,
-  input,
-  output,
-  status,
-  latencyMs: 0,
-  costEur: 0
- });
+ try {
+  await logModelRun({
+   purpose: "tool_call",
+   provider: "mock",
+   model: `tool:${toolName}`,
+   input,
+   output,
+   status,
+   latencyMs: 0,
+   costEur: 0
+  });
+ } catch (error) {
+  console.error(`[NeoTravel] ${toolName} audit logging failed`, error);
+ }
 }
 
 function toDemandDraft(input: DemandToolInput): DemandDraft {
