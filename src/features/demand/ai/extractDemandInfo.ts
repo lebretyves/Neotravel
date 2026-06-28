@@ -2,6 +2,7 @@ import type { DemandDraft, TripType } from "@/shared/types/lead";
 
 const cityPairPattern = /\b([A-ZÀ-Ÿ][\p{L} -]{1,40})\s*(?:->|→|vers|a|à)\s*([A-ZÀ-Ÿ][\p{L} -]{1,40})\b/u;
 const passengerPattern = /(\d{1,3})\s*(?:passagers?|personnes?|pax)\b/i;
+const simpleCityPairPattern = /^\s*([\p{L}'-]{2,40})\s+([\p{L}'-]{2,40})\s*$/u;
 const emailPattern = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i;
 const isoDatePattern = /\b(20\d{2}-\d{2}-\d{2})\b/;
 const frenchDatePattern =
@@ -31,6 +32,13 @@ function cleanCity(value: string) {
   .replace(/\s+(le|pour|avec)\s*$/i, "")
   .replace(/\s+(le|pour|avec)\s.+$/i, "")
   .trim();
+}
+
+function titleCity(value: string) {
+ return value
+  .trim()
+  .toLowerCase()
+  .replace(/(^|[\s'-])(\p{L})/gu, (_match, prefix: string, letter: string) => `${prefix}${letter.toUpperCase()}`);
 }
 
 function detectTripType(message: string): TripType | null {
@@ -79,6 +87,7 @@ function detectDepartureDate(message: string) {
 
 export async function extractDemandInfo(message: string): Promise<DemandDraft> {
  const routeMatch = message.match(cityPairPattern);
+ const simpleRouteMatch = routeMatch ? null : message.match(simpleCityPairPattern);
  const passengerMatch = message.match(passengerPattern);
  const emailMatch = message.match(emailPattern);
 
@@ -86,8 +95,8 @@ export async function extractDemandInfo(message: string): Promise<DemandDraft> {
   rawMessage: message,
   organization: detectOrganization(message, emailMatch?.[0]),
   email: emailMatch?.[0] ?? null,
-  departureCity: routeMatch?.[1] ? cleanCity(routeMatch[1]) : null,
-  arrivalCity: routeMatch?.[2] ? cleanCity(routeMatch[2]) : null,
+  departureCity: routeMatch?.[1] ? cleanCity(routeMatch[1]) : simpleRouteMatch?.[1] ? titleCity(simpleRouteMatch[1]) : null,
+  arrivalCity: routeMatch?.[2] ? cleanCity(routeMatch[2]) : simpleRouteMatch?.[2] ? titleCity(simpleRouteMatch[2]) : null,
   departureDate: detectDepartureDate(message),
   returnDate: null,
   passengerCount: passengerMatch ? Number(passengerMatch[1]) : null,
