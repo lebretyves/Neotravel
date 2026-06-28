@@ -29,7 +29,8 @@ export function getIntegrationsStatus(): IntegrationStatus[] {
 
   const supabaseConfigured =
     isSet(env.NEXT_PUBLIC_SUPABASE_URL) && isSet(env.NEXT_PUBLIC_SUPABASE_ANON_KEY) && isSet(env.SUPABASE_SERVICE_ROLE_KEY);
-  const aiConnected = isSet(env.AI_PROVIDER) && env.AI_PROVIDER !== "mock" && isSet(env.OPENAI_API_KEY);
+  const aiConnected = isSet(env.AI_GATEWAY_API_KEY) || isSet(env.AI_API_KEY);
+  const aiProvider = isSet(env.AI_GATEWAY_API_KEY) ? "Vercel AI Gateway" : isSet(env.AI_API_KEY) ? "OpenRouter" : "mock";
   const n8nConnected = isSet(env.N8N_BASE_URL);
 
   return [
@@ -53,14 +54,17 @@ export function getIntegrationsStatus(): IntegrationStatus[] {
     },
     {
       id: "ai",
-      name: "IA (OpenAI)",
+      name: "IA",
       description: "Extraction et qualification automatiques des demandes par l'agent.",
       connected: aiConnected,
-      detail: aiConnected ? `Connecté (${env.AI_MODEL ?? "modèle par défaut"}).` : "Mode mock : réponses simulées.",
+      detail: aiConnected
+        ? `Connecté via ${aiProvider} (${env.AI_GATEWAY_MODEL_ID ?? env.AI_MODEL_ID ?? "modèle par défaut"}).`
+        : "Non configuré : réponses de secours uniquement.",
       fields: withStatus([
-        { key: "AI_PROVIDER", label: "Fournisseur", placeholder: "openai" },
-        { key: "AI_MODEL", label: "Modèle", placeholder: "gpt-4o-mini" },
-        { key: "OPENAI_API_KEY", label: "Clé API OpenAI", secret: true }
+        { key: "AI_GATEWAY_API_KEY", label: "Clé Vercel AI Gateway", secret: true },
+        { key: "AI_GATEWAY_MODEL_ID", label: "Modèle Gateway", placeholder: "openai/gpt-5-mini" },
+        { key: "AI_API_KEY", label: "Clé OpenRouter", secret: true },
+        { key: "AI_MODEL_ID", label: "Modèle OpenRouter", placeholder: "openai/gpt-oss-120b:free" }
       ])
     },
     {
@@ -87,19 +91,3 @@ export function getIntegrationsStatus(): IntegrationStatus[] {
     }
   ];
 }
-
-export const ALLOWED_ENV_KEYS = new Set([
-  "NEXT_PUBLIC_SUPABASE_URL",
-  "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  "SUPABASE_SERVICE_ROLE_KEY",
-  "NEXT_PUBLIC_DEMO_MODE",
-  "AI_PROVIDER",
-  "AI_MODEL",
-  "OPENAI_API_KEY",
-  "N8N_BASE_URL",
-  "N8N_WEBHOOK_SECRET",
-  "N8N_SEND_QUOTE_WEBHOOK",
-  "N8N_FOLLOWUP_WEBHOOK",
-  "N8N_HUMAN_REVIEW_WEBHOOK",
-  "N8N_DAILY_DIGEST_WEBHOOK"
-]);

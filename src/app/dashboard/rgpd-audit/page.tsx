@@ -1,5 +1,7 @@
-import { RgpdAuditDashboardPage } from "@/features/dashboard/components/DashboardViews";
+import { RgpdAuditClient } from "@/features/dashboard/components/RgpdAuditClient";
+import { requirePermission } from "@/shared/lib/auth/requireAdmin";
 
-export default function DashboardRgpdAuditPage() {
-  return <RgpdAuditDashboardPage />;
+export default async function DashboardRgpdAuditPage() {
+ await requirePermission("compliance");
+ return <RgpdAuditClient />;
 }

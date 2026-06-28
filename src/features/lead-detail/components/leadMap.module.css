@@ -1,0 +1,43 @@
+.wrap {
+ display: grid;
+ gap: 8px;
+}
+
+.map {
+ height: 340px;
+ width: 100%;
+ border-radius: 10px;
+ overflow: hidden;
+ border: 1px solid #d9e2ed;
+ background: #eaf0f7;
+ z-index: 0;
+}
+
+.caption {
+ margin: 0;
+ color: #8a97a8;
+ font-size: 12px;
+ font-weight: 700;
+}
+
+.fallback {
+ display: grid;
+ gap: 6px;
+ align-content: center;
+ height: 200px;
+ padding: 0 20px;
+ border-radius: 10px;
+ border: 1px dashed #cfd8e6;
+ background: #f4f7fb;
+}
+
+.fallback strong {
+ color: #475467;
+ font-size: 15px;
+}
+
+.fallback span {
+ color: #94a3b8;
+ font-size: 12px;
+ line-height: 1.45;
+}

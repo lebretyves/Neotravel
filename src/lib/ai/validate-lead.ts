@@ -41,7 +41,7 @@ export function validateLead(
       warnings.push({
         field: "departureDate",
         code: "DEPARTURE_DATE_INVALID",
-        message: "La date de départ n'est pas valide. Indiquez une date au format jour/mois/année.",
+        message: "Je n’ai pas reconnu la date de départ. Indiquez-la par exemple comme « 11 juillet » ou « 11/07/2027 ».",
         blocking: true,
       });
       delete sanitized.departure_date;

@@ -7,4 +7,5 @@ export type Followup = {
   channel: "email";
   status: FollowupStatus;
   dueAt: string;
+  createdAt?: string | null;
 };

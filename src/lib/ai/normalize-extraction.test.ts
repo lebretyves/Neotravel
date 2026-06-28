@@ -177,6 +177,32 @@ describe("multi-turn lead accumulation", () => {
     expect(state.return_date).toBe("2027-06-12");
   });
 
+  it("manual form sync can add contact email and return date without erasing route fields", () => {
+    const state = mergeLead(
+      LeadQualificationSchema.parse({
+        departure_city: "Paris",
+        arrival_city: "Lyon",
+        departure_date: "2027-06-11",
+        passenger_count: 45,
+        trip_type: "round_trip",
+      }),
+      {
+        email: "client@neotravel.fr",
+        return_date: "2027-06-12",
+      },
+    );
+
+    expect(state).toMatchObject({
+      email: "client@neotravel.fr",
+      departure_city: "Paris",
+      arrival_city: "Lyon",
+      departure_date: "2027-06-11",
+      return_date: "2027-06-12",
+      passenger_count: 45,
+      trip_type: "round_trip",
+    });
+  });
+
   it("does not let a later extraction erase a detected intermediate stop", () => {
     const state = mergeLead(
       LeadQualificationSchema.parse({

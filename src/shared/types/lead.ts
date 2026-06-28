@@ -34,5 +34,10 @@ export type Lead = DemandDraft & {
   missingFields?: string[];
   confidence?: number | null;
   humanReviewReason?: string | null;
+  humanReviewNotes?: string | null;
   aiSummary?: string | null;
+  source?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  qualifiedAt?: string | null;
 };

@@ -1,148 +1,253 @@
+.sourceBar {
+ display: inline-flex;
+ width: fit-content;
+ align-items: center;
+ gap: 10px;
+ border: 1px solid #cfe0f5;
+ border-radius: 999px;
+ padding: 8px 12px;
+ background: #f4f8ff;
+ color: #20304a;
+}
+
+.sourceBar[data-mode="mock"] {
+ border-color: #f2d69b;
+ background: #fff8e9;
+}
+
+.sourceBar strong {
+ font-size: 12px;
+}
+
+.sourceBar span {
+ color: #65748d;
+ font-size: 12px;
+}
+
+.overviewGrid {
+ display: grid;
+ grid-template-columns: minmax(0, 1fr) 280px;
+ gap: 18px;
+}
+
+.healthStack {
+ display: grid;
+ gap: 12px;
+ align-content: start;
+}
+
+.healthCard {
+ display: grid;
+ gap: 6px;
+ border: 1px solid #dfe7f2;
+ border-radius: 14px;
+ padding: 16px;
+ color: inherit;
+ background: #ffffff;
+ box-shadow: 0 12px 28px -20px rgba(5, 13, 31, 0.24);
+ transition: border-color 0.14s ease, background 0.14s ease, transform 0.14s ease;
+}
+
+.healthCard:hover {
+ transform: translateY(-1px);
+ border-color: #b7cae4;
+ background: #f8fbff;
+}
+
+.healthCard[data-tone="critical"] {
+ border-color: #f0b8bd;
+ background: #fff7f8;
+}
+
+.healthCard[data-tone="warning"] {
+ border-color: #efd7a3;
+ background: #fffaf0;
+}
+
+.healthCard span,
+.pipelineItem span {
+ color: #5f6d82;
+ font-size: 12px;
+ font-weight: 800;
+}
+
+.healthCard strong {
+ color: #123885;
+ font-size: 30px;
+ line-height: 1;
+}
+
+.healthCard[data-tone="critical"] strong {
+ color: #d51b29;
+}
+
+.healthCard[data-tone="warning"] strong {
+ color: #8a5a06;
+}
+
+.healthCard small,
+.pipelineItem small {
+ color: #748198;
+ font-size: 12px;
+}
+
+.pipelineStrip {
+ display: grid;
+ grid-template-columns: repeat(4, minmax(0, 1fr));
+ gap: 10px;
+}
+
+.pipelineItem {
+ display: grid;
+ grid-template-columns: minmax(0, 1fr) auto;
+ gap: 5px 12px;
+ align-items: center;
+ border: 1px solid #dfe7f2;
+ border-radius: 12px;
+ padding: 12px 14px;
+ color: inherit;
+ background: #ffffff;
+}
+
+.pipelineItem:hover {
+ border-color: #b7cae4;
+ background: #f8fbff;
+}
+
+.pipelineItem strong {
+ color: #123885;
+ font-size: 22px;
+ line-height: 1;
+}
+
+.pipelineItem small {
+ grid-column: 1 / -1;
+}
+
 .actionList {
-  display: grid;
+ display: grid;
 }
 
 .actionRow {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr) auto;
-  gap: 16px;
-  align-items: center;
-  padding: 14px 22px;
-  border-top: 1px solid #edf1f6;
-  transition: background 0.14s ease;
+ display: grid;
+ grid-template-columns: 150px minmax(0, 1fr) auto;
+ gap: 16px;
+ align-items: center;
+ padding: 14px 22px;
+ border-top: 1px solid #edf1f6;
+ transition: background 0.14s ease;
 }
 
 .actionRow:first-child {
-  border-top: 0;
+ border-top: 0;
 }
 
 .actionRow:hover {
-  background: #f7faff;
+ background: #f7faff;
 }
 
 .actionInfo {
-  display: grid;
-  min-width: 0;
+ display: grid;
+ min-width: 0;
 }
 
 .actionInfo strong {
-  overflow: hidden;
-  color: #17202e;
-  font-size: 14px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+ overflow: hidden;
+ color: #17202e;
+ font-size: 14px;
+ text-overflow: ellipsis;
+ white-space: nowrap;
 }
 
 .actionInfo small {
-  color: #637188;
-  font-size: 12px;
+ color: #637188;
+ font-size: 12px;
 }
 
 .actionCta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 38px;
-  border-radius: 8px;
-  padding: 0 16px;
-  color: #ffffff;
-  background: #123885;
-  font-size: 12px;
-  font-weight: 900;
-  white-space: nowrap;
-  transition: transform 0.14s ease, background 0.14s ease, box-shadow 0.14s ease;
+ display: inline-flex;
+ align-items: center;
+ gap: 6px;
+ min-height: 38px;
+ border-radius: 8px;
+ padding: 0 16px;
+ color: #ffffff;
+ background: #123885;
+ font-size: 12px;
+ font-weight: 900;
+ white-space: nowrap;
+ transition: transform 0.14s ease, background 0.14s ease, box-shadow 0.14s ease;
 }
 
 .actionCta:hover {
-  transform: translateY(-1px);
-  background: #0e2e6f;
-  box-shadow: 0 10px 20px -12px rgba(18, 56, 133, 0.8);
+ transform: translateY(-1px);
+ background: #0e2e6f;
+ box-shadow: 0 10px 20px -12px rgba(18, 56, 133, 0.8);
+}
+
+.nextAction {
+ display: grid;
+ gap: 2px;
+ min-width: 0;
+}
+
+.nextAction strong {
+ color: #0d2040;
+ font-size: 12px;
+}
+
+.nextAction small {
+ overflow: hidden;
+ color: #637188;
+ font-size: 11px;
+ text-overflow: ellipsis;
+ white-space: nowrap;
+}
+
+.nextAction[data-tone="critical"] strong {
+ color: #b3261e;
+}
+
+.nextAction[data-tone="warning"] strong {
+ color: #8a5a06;
+}
+
+.nextAction[data-tone="success"] strong {
+ color: #0b8554;
 }
 
 .empty {
-  display: grid;
-  gap: 6px;
-  padding: 30px 22px;
-  text-align: center;
+ display: grid;
+ gap: 6px;
+ padding: 30px 22px;
+ text-align: center;
 }
 
 .empty strong {
-  color: #0d2040;
-  font-size: 16px;
+ color: #0d2040;
+ font-size: 16px;
 }
 
 .empty span {
-  color: #637188;
-  font-size: 13px;
-}
-
-.guide {
-  margin-top: 22px;
-  padding: 18px 22px;
-  border: 1px solid #d9e2ed;
-  border-radius: 10px;
-  background: #ffffff;
-  box-shadow: 0 14px 32px -14px rgba(5, 13, 31, 0.1);
-}
-
-.guideTitle {
-  margin: 0 0 14px;
-  color: #6b7890;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.steps {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.steps li {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.stepNum {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border-radius: 999px;
-  background: #eef4ff;
-  color: #123885;
-  font-size: 13px;
-  font-weight: 900;
-}
-
-.steps strong {
-  display: block;
-  color: #1f2a3d;
-  font-size: 14px;
-}
-
-.steps small {
-  color: #7c8aa0;
-  font-size: 12px;
+ color: #637188;
+ font-size: 13px;
 }
 
 @media (max-width: 860px) {
-  .steps {
-    grid-template-columns: 1fr 1fr;
-  }
+ .overviewGrid {
+  grid-template-columns: 1fr;
+ }
 
-  .actionRow {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
+ .healthStack,
+ .pipelineStrip {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+ }
 
-  .actionStatus {
-    display: none;
-  }
+ .actionRow {
+  grid-template-columns: minmax(0, 1fr) auto;
+ }
+
+ .actionStatus {
+  display: none;
+ }
 }

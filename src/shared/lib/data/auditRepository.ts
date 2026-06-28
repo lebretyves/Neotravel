@@ -8,23 +8,22 @@ type AuditLogRow = {
   entity_type: AuditLog["entityType"];
   entity_id: string;
   action: string;
-  actor_type: AuditLog["actor"];
-  input_hash: string | null;
-  output_hash: string | null;
-  payload: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
   created_at: string;
 };
 
 function toAuditLog(row: AuditLogRow): AuditLog {
+  const metadata = row.metadata ?? {};
+
   return {
     id: row.id,
     entityType: row.entity_type,
     entityId: row.entity_id,
     action: row.action,
-    actor: row.actor_type,
-    inputHash: row.input_hash ?? undefined,
-    outputHash: row.output_hash ?? undefined,
-    payload: row.payload ?? undefined,
+    actor: typeof metadata.actor === "string" ? (metadata.actor as AuditLog["actor"]) : "system",
+    inputHash: typeof metadata.inputHash === "string" ? metadata.inputHash : undefined,
+    outputHash: typeof metadata.outputHash === "string" ? metadata.outputHash : undefined,
+    payload: metadata,
     createdAt: row.created_at
   };
 }
@@ -39,12 +38,14 @@ export async function createAuditLogRecord(input: Omit<AuditLog, "id" | "created
       entity_type: input.entityType,
       entity_id: input.entityId,
       action: input.action,
-      actor_type: input.actor,
-      input_hash: input.inputHash ?? null,
-      output_hash: input.outputHash ?? null,
-      payload: input.payload ?? {}
+      metadata: {
+        ...(input.payload ?? {}),
+        actor: input.actor,
+        inputHash: input.inputHash ?? null,
+        outputHash: input.outputHash ?? null
+      }
     })
-    .select("id, entity_type, entity_id, action, actor_type, input_hash, output_hash, payload, created_at")
+    .select("id, entity_type, entity_id, action, metadata, created_at")
     .single();
 
   if (error) throw error;
@@ -57,7 +58,7 @@ export async function listAuditLogs() {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("audit_logs")
-    .select("id, entity_type, entity_id, action, actor_type, input_hash, output_hash, payload, created_at")
+    .select("id, entity_type, entity_id, action, metadata, created_at")
     .order("created_at", { ascending: false });
 
   if (error) throw error;

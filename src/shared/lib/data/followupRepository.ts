@@ -8,9 +8,23 @@ type FollowupRow = {
   lead_id: string;
   quote_id: string | null;
   channel: "email";
-  status: Followup["status"];
+  status: string;
   scheduled_at: string;
 };
+
+// The DB stores lowercase statuses (scheduled/sent/cancelled); the app type and the
+// dashboard expect uppercase (SCHEDULED/SENT/…). Normalize at the boundary so followup
+// counts are live everywhere.
+function normalizeFollowupStatus(raw: string): Followup["status"] {
+  switch (raw) {
+    case "scheduled":
+      return "SCHEDULED";
+    case "sent":
+      return "SENT";
+    default:
+      return raw.toUpperCase() as Followup["status"];
+  }
+}
 
 function toFollowup(row: FollowupRow): Followup {
   return {
@@ -18,7 +32,7 @@ function toFollowup(row: FollowupRow): Followup {
     leadId: row.lead_id,
     quoteId: row.quote_id ?? undefined,
     channel: row.channel,
-    status: row.status,
+    status: normalizeFollowupStatus(row.status),
     dueAt: row.scheduled_at
   };
 }

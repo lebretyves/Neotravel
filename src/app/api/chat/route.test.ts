@@ -17,7 +17,7 @@ describe("POST /api/chat", () => {
 
     expect(body).toEqual({
       status: "ERROR",
-      message: "Message utilisateur manquant.",
+      message: "Votre message est vide. Ajoutez quelques informations sur votre trajet.",
     });
   });
 
@@ -35,16 +35,18 @@ describe("POST /api/chat", () => {
 
     expect(body).toMatchObject({
       status: "HUMAN_REVIEW",
-      message: expect.stringContaining("calculer_devis()"),
+      message: expect.stringContaining("règles tarifaires"),
       reviewReason: "PROMPT_INJECTION_ATTEMPT",
     });
     expect(body).not.toHaveProperty("refusal");
   });
 
   it("retourne une erreur claire si la clé AI manque", async () => {
-    const previousKey = process.env.AI_API_KEY;
+    const previousOpenRouterKey = process.env.AI_API_KEY;
+    const previousGatewayKey = process.env.AI_GATEWAY_API_KEY;
 
     delete process.env.AI_API_KEY;
+    delete process.env.AI_GATEWAY_API_KEY;
 
     const response = await POST(
       new Request("http://localhost/api/chat", {
@@ -53,7 +55,8 @@ describe("POST /api/chat", () => {
       }),
     );
 
-    if (previousKey !== undefined) process.env.AI_API_KEY = previousKey;
+    if (previousOpenRouterKey !== undefined) process.env.AI_API_KEY = previousOpenRouterKey;
+    if (previousGatewayKey !== undefined) process.env.AI_GATEWAY_API_KEY = previousGatewayKey;
 
     expect(response.status).toBe(503);
 
@@ -61,7 +64,7 @@ describe("POST /api/chat", () => {
 
     expect(body).toMatchObject({
       status: "ERROR",
-      message: expect.stringContaining("AI_API_KEY"),
+      message: expect.stringContaining("momentanément indisponible"),
     });
     expect(body).not.toHaveProperty("error");
   });

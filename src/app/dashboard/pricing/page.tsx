@@ -1,5 +1,7 @@
 import { PricingDashboardPage } from "@/features/dashboard/components/DashboardViews";
+import { requirePermission } from "@/shared/lib/auth/requireAdmin";
 
 export default async function DashboardPricingPage() {
-  return <PricingDashboardPage />;
+ await requirePermission("pricing");
+ return <PricingDashboardPage />;
 }

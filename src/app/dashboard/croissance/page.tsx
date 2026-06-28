@@ -1,5 +1,7 @@
-import { GrowthDashboardPage } from "@/features/dashboard/components/DashboardViews";
+import { GrowthDashboardClient } from "@/features/dashboard/components/GrowthDashboardClient";
+import { requirePermission } from "@/shared/lib/auth/requireAdmin";
 
-export default function DashboardGrowthPage() {
-  return <GrowthDashboardPage />;
+export default async function DashboardGrowthPage() {
+ await requirePermission("growth");
+ return <GrowthDashboardClient />;
 }

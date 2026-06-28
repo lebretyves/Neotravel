@@ -9,9 +9,9 @@ describe("buildQualificationResponse", () => {
     ).toBe("Quelle est votre ville d'arrivée ?");
   });
 
-  it("provides a date format example when departure_date is next", () => {
+  it("asks for an approximate date when departure_date is next", () => {
     expect(buildQualificationResponse([], ["departure_date", "passenger_count"])).toBe(
-      "À quelle date souhaitez-vous partir ? (Ex. 11 juillet ou 2026-07-11.)",
+      "À quelle date souhaitez-vous partir ? Une date approximative suffit pour avancer.",
     );
   });
 

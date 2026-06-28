@@ -92,7 +92,7 @@
   gap: 24px;
   align-items: center;
   min-height: 74px;
-  margin: 0 clamp(24px, 4vw, 60px);
+  margin: 0 clamp(24px, 4vw, 60px) 24px;
   border: 1px solid #d9e2ed;
   border-radius: 16px;
   padding: 12px 24px;
@@ -106,7 +106,7 @@
 
 .progress {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin: 0;
   padding: 0;
@@ -196,10 +196,41 @@
 
 .chatCard {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
   gap: 16px;
   min-height: auto;
   padding: 28px;
+}
+
+.chatCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chatCardHeader h2 {
+  margin: 0;
+  color: #0d2040;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.resetButton {
+  border: 1px solid #d9e2ed;
+  border-radius: 8px;
+  padding: 6px 14px;
+  background: #ffffff;
+  color: #123885;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.resetButton:hover {
+  background: #f1f5fb;
+  border-color: #c2d2e6;
 }
 
 .chatMessages {
@@ -324,6 +355,7 @@
 
 .chatActions {
   display: grid;
+  gap: 10px;
 }
 
 .primaryButton {
@@ -344,6 +376,7 @@
 
 .humanReviewButton {
   display: inline-flex;
+  border: 0;
   min-height: 48px;
   align-items: center;
   justify-content: center;
@@ -353,6 +386,11 @@
   background: #123885;
   font-size: 13px;
   font-weight: 900;
+}
+
+.humanReviewButton:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .chatActions .primaryButton {
@@ -665,9 +703,11 @@
     #eef4fb;
 }
 
-.routeEmptyState {
+.routeEmptyOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
   display: grid;
-  min-height: 230px;
   place-items: center;
   border: 1px dashed #d9e2ed;
   border-radius: 18px;
@@ -816,7 +856,7 @@
   }
 
   .progressCard {
-    margin: 0 16px;
+    margin: 0 16px 20px;
   }
 
   .progress {
@@ -843,4 +883,50 @@
     align-items: flex-start;
     flex-direction: column;
   }
+}
+
+/* --- Send button (distinct from the red devis CTA) + neutral/ready messages --- */
+.sendButton {
+  display: inline-flex;
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  padding: 0 16px;
+  color: #ffffff;
+  background: #123885;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.sendButton:hover {
+  background: #0e2c69;
+}
+
+.sendButton:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.workflowHint {
+  margin: -4px 0 0;
+  border: 1px solid #cfe0f5;
+  border-radius: 14px;
+  padding: 11px 13px;
+  color: #1c4a8a;
+  background: #eef5fd;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.workflowReady {
+  margin: -4px 0 0;
+  border: 1px solid #bfe8d2;
+  border-radius: 14px;
+  padding: 11px 13px;
+  color: #0b7a4b;
+  background: #e9f9f0;
+  font-size: 13px;
+  font-weight: 800;
 }

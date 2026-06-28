@@ -27,6 +27,24 @@ const engagementCards = [
   { title: "Suivi complet", body: "Chaque etape — devis, validation, relance — est tracee et auditable." },
 ];
 
+const trustpilotReviews = [
+  {
+    id: "school",
+    source: "Association scolaire",
+    text: "Devis rapide, trajet clair et conseiller disponible pour finaliser la sortie.",
+  },
+  {
+    id: "company",
+    source: "Responsable seminaire",
+    text: "Reservation lisible, options bien suivies et reprise humaine quand le dossier devient sensible.",
+  },
+  {
+    id: "sport",
+    source: "Club sportif",
+    text: "Organisation fluide pour un groupe nombreux, avec suivi des relances sans perte d'information.",
+  },
+];
+
 export default function HomePage() {
   return (
     <main className={styles.page}>
@@ -49,6 +67,7 @@ export default function HomePage() {
             <Link href="/client/partenaires">Partenaires</Link>
             <a href="#engagements">Engagements</a>
           </nav>
+
           <LanguageSelector />
           <AccessibilityWidget />
         </div>
@@ -122,6 +141,25 @@ export default function HomePage() {
               <p style={{ margin: "8px 0 0", color: "#5e6b7e", fontSize: 15, lineHeight: 1.5 }}>{card.body}</p>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className={styles.trustpilotBand} aria-label="Avis Trustpilot NeoTravel">
+        <div className={styles.trustScore}>
+          <p className={styles.kicker}>Avis Trustpilot</p>
+          <h2>Excellent 4.9/5</h2>
+          <span aria-label="5 etoiles">★★★★★</span>
+        </div>
+        <div className={styles.reviewTicker} aria-live="off">
+          <div className={styles.reviewTrack}>
+            {[...trustpilotReviews, ...trustpilotReviews].map((review, index) => (
+              <article className={styles.reviewItem} key={`${review.id}-${index}`}>
+                <span aria-hidden="true">★★★★★</span>
+                <strong>{review.source}</strong>
+                <p>{review.text}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
 

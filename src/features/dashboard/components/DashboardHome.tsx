@@ -1,124 +1,253 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { listFollowups, listLeads, listQuotes } from "@/shared/lib/data";
-import { DashboardHeader, KpiGrid, Panel } from "./DashboardPageKit";
+import { currentDataMode, listAuditLogs, listFollowups, listLeads, listQuotes } from "@/shared/lib/data";
+import type { Lead, LeadStatus } from "@/shared/types/lead";
+import type { Quote } from "@/shared/types/quote";
+import {
+ formatCommercialDate,
+ formatEuro,
+ getLeadCommercialAction,
+ latestQuoteByLeadId,
+ leadDisplayName,
+ leadRouteLabel,
+ nextScheduledFollowup,
+ quoteLabel
+} from "@/features/dashboard/services/leadPipelinePresentation";
+import { DashboardHeader, DataTable, Note, Panel } from "./DashboardPageKit";
 import { StatusBadge } from "./StatusBadge";
 import dashStyles from "./dashboard.module.css";
 import styles from "./dashboardHome.module.css";
 
 type NextAction = {
-  id: string;
-  client: string;
-  status: string;
-  what: string;
-  cta: string;
-  href: string;
-  priority: number;
+ id: string;
+ client: string;
+ status: string;
+ what: string;
+ cta: string;
+ href: string;
+ priority: number;
 };
 
-const STEPS = [
-  { n: 1, label: "Inscription", hint: "La demande arrive" },
-  { n: 2, label: "Qualification", hint: "Vérifier / valider" },
-  { n: 3, label: "Devis", hint: "Calculer et envoyer" },
-  { n: 4, label: "Relance", hint: "Suivre jusqu'à la décision" }
-];
+const QUOTEABLE_STATUSES = new Set<LeadStatus>(["QUALIFIED", "HIGH_VALUE"]);
+
+function formatDateTime(value: string | null | undefined) {
+ if (!value) return "—";
+ return new Intl.DateTimeFormat("fr-FR", {
+  day: "2-digit",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit"
+ }).format(new Date(value));
+}
+
+function quoteTotal(quote: Quote) {
+ return quote.calculation.priceTtc ?? quote.calculation.totalAmount ?? 0;
+}
+
+function buildNextActions(leads: Lead[], quotes: Quote[], followups: Parameters<typeof nextScheduledFollowup>[1]) {
+ const actions: NextAction[] = [];
+ const quoteByLeadId = latestQuoteByLeadId(quotes);
+ const now = Date.now();
+
+ for (const lead of leads) {
+  const quote = quoteByLeadId.get(lead.id);
+  const followup = nextScheduledFollowup(lead.id, followups);
+  const action = getLeadCommercialAction({ lead, quote, followup, now });
+  if (action.priority > 6) continue;
+  actions.push({
+   id: lead.id,
+   client: leadDisplayName(lead),
+   status: lead.status,
+   what: action.label,
+   cta: action.cta,
+   href: action.href,
+   priority: action.priority
+  });
+ }
+
+ for (const followup of followups) {
+  if (followup.status !== "SCHEDULED") continue;
+  const dueAt = new Date(followup.dueAt).getTime();
+  const lead = leads.find((item) => item.id === followup.leadId);
+  if (lead) continue;
+  actions.push({
+   id: `followup-${followup.id}`,
+   client: "Lead introuvable",
+   status: "SCHEDULED",
+   what: dueAt < now ? "Relance en retard" : `Relance prévue le ${formatCommercialDate(followup.dueAt)}`,
+   cta: "Relancer",
+   href: `/dashboard/demandes/${followup.leadId}`,
+   priority: dueAt < now ? 0 : 5
+  });
+ }
+
+ return actions.sort((a, b) => a.priority - b.priority).slice(0, 8);
+}
+
+function countByStatus(leads: Lead[], statuses: LeadStatus[]) {
+ return leads.filter((lead) => statuses.includes(lead.status)).length;
+}
 
 export async function DashboardHome() {
-  const [leads, quotes, followups] = await Promise.all([listLeads(), listQuotes(), listFollowups()]);
+ const [leads, quotes, followups, auditLogs] = await Promise.all([
+  listLeads(),
+  listQuotes(),
+  listFollowups(),
+  listAuditLogs()
+ ]);
 
-  const actions: NextAction[] = [];
-  for (const lead of leads) {
-    const client = lead.organization ?? lead.email ?? lead.id;
-    const href = `/dashboard/demandes/${lead.id}`;
-    if (lead.status === "HUMAN_REVIEW") {
-      actions.push({ id: lead.id, client, status: lead.status, what: "Trancher la revue humaine", cta: "Valider", href, priority: 0 });
-    } else if (lead.status === "NEW") {
-      actions.push({ id: lead.id, client, status: lead.status, what: "Qualifier la nouvelle demande", cta: "Ouvrir", href, priority: 1 });
-    } else if (lead.status === "INCOMPLETE") {
-      actions.push({ id: lead.id, client, status: lead.status, what: "Compléter les informations manquantes", cta: "Compléter", href, priority: 2 });
-    } else if (lead.status === "QUALIFIED" || lead.status === "HIGH_VALUE") {
-      actions.push({ id: lead.id, client, status: lead.status, what: "Générer le devis", cta: "Générer", href, priority: 3 });
-    } else if (lead.status === "QUOTE_READY") {
-      actions.push({ id: lead.id, client, status: lead.status, what: "Envoyer le devis", cta: "Envoyer", href, priority: 3 });
-    }
+ const mode = currentDataMode();
+ const quoteByLeadId = latestQuoteByLeadId(quotes);
+ const actions = buildNextActions(leads, quotes, followups);
+ const scheduledFollowups = followups.filter((followup) => followup.status === "SCHEDULED");
+ const overdueFollowups = scheduledFollowups.filter((followup) => new Date(followup.dueAt).getTime() < Date.now());
+ const quoteVolume = quotes.reduce((sum, quote) => sum + quoteTotal(quote), 0);
+ const humanReviewCount = countByStatus(leads, ["HUMAN_REVIEW"]);
+ const incompleteCount = countByStatus(leads, ["INCOMPLETE"]);
+ const quoteableCount = leads.filter((lead) => QUOTEABLE_STATUSES.has(lead.status) && !quoteByLeadId.has(lead.id)).length;
+ const quoteReadyCount = quotes.filter((quote) => quote.status === "QUOTE_READY").length;
+ const pipelineGroups = [
+  {
+   label: "À qualifier",
+   value: countByStatus(leads, ["NEW", "INCOMPLETE"]),
+   href: "/dashboard/demandes",
+   hint: `${incompleteCount} incomplète(s)`
+  },
+  {
+   label: "À valider",
+   value: humanReviewCount,
+   href: "/dashboard/human-review",
+   hint: "Reprise humaine"
+  },
+  {
+   label: "À deviser",
+   value: quoteableCount,
+   href: "/dashboard/demandes?status=qualified",
+   hint: "Qualifiées sans devis"
+  },
+  {
+   label: "Devis prêts",
+   value: quoteReadyCount,
+   href: "/dashboard/devis?status=open",
+   hint: formatEuro(quoteVolume)
   }
-  for (const followup of followups) {
-    if (followup.status === "SCHEDULED") {
-      const lead = leads.find((item) => item.id === followup.leadId);
-      actions.push({
-        id: `f-${followup.id}`,
-        client: lead?.organization ?? followup.leadId,
-        status: "FOLLOWUP_SCHEDULED",
-        what: "Relance à envoyer",
-        cta: "Relancer",
-        href: `/dashboard/demandes/${followup.leadId}`,
-        priority: 4
-      });
-    }
-  }
-  actions.sort((a, b) => a.priority - b.priority);
+ ];
 
-  const toTreat = leads.filter((lead) => ["NEW", "INCOMPLETE", "HUMAN_REVIEW"].includes(lead.status)).length;
+ return (
+  <main className={dashStyles.page}>
+   <DashboardHeader
+    title="Pilotage commercial"
+    subtitle="Vue opérationnelle du pipeline NeoTravel : demandes, devis, relances et actions à reprendre."
+    actionHref="/client/demande"
+    actionLabel="Nouvelle demande"
+   />
 
-  return (
-    <main className={dashStyles.page}>
-      <DashboardHeader
-        title="Tableau de bord"
-        subtitle="Vos prochaines actions, en un coup d'œil. Commencez par « À faire maintenant »."
-        actionHref="/demande"
-        actionLabel="Nouvelle demande"
-      />
+   <div className={styles.sourceBar} data-mode={mode}>
+    <strong>Source données : {mode === "supabase" ? "Supabase" : "mode démo local"}</strong>
+    <span>{mode === "supabase" ? "Données réelles" : "Données demoStore"}</span>
+   </div>
 
-      <KpiGrid
-        kpis={[
-          { label: "Demandes", value: leads.length, tone: "blue" },
-          { label: "À traiter", value: toTreat, tone: "red" },
-          { label: "Devis envoyés", value: quotes.filter((q) => q.status === "QUOTE_SENT").length, tone: "green" },
-          { label: "Relances prévues", value: followups.filter((f) => f.status === "SCHEDULED").length, tone: "gold" }
-        ]}
-      />
+   <section className={styles.overviewGrid} aria-label="Priorités commerciales">
+    <Panel title="À faire maintenant" subtitle="File priorisée : validation humaine, demandes incomplètes, relances en retard.">
+     {actions.length === 0 ? (
+      <div className={styles.empty}>
+       <strong>Aucune action urgente</strong>
+       <span>Les nouvelles demandes, reprises humaines et relances apparaîtront ici automatiquement.</span>
+      </div>
+     ) : (
+      <ul className={styles.actionList}>
+       {actions.map((action) => (
+        <li key={action.id} className={styles.actionRow}>
+         <span className={styles.actionStatus}>
+          <StatusBadge status={action.status} />
+         </span>
+         <span className={styles.actionInfo}>
+          <strong>{action.client}</strong>
+          <small>{action.what}</small>
+         </span>
+         <Link className={styles.actionCta} href={action.href}>
+          {action.cta}
+          <ArrowRight aria-hidden="true" size={15} />
+         </Link>
+        </li>
+       ))}
+      </ul>
+     )}
+    </Panel>
 
-      <Panel title="À faire maintenant" subtitle="La liste priorisée de ce qui vous attend. Cliquez pour traiter.">
-        {actions.length === 0 ? (
-          <div className={styles.empty}>
-            <strong>Tout est à jour 🎉</strong>
-            <span>Aucune action en attente. Les nouvelles demandes apparaîtront ici automatiquement.</span>
-          </div>
-        ) : (
-          <ul className={styles.actionList}>
-            {actions.map((action) => (
-              <li key={action.id} className={styles.actionRow}>
-                <span className={styles.actionStatus}>
-                  <StatusBadge status={action.status} />
-                </span>
-                <span className={styles.actionInfo}>
-                  <strong>{action.client}</strong>
-                  <small>{action.what}</small>
-                </span>
-                <Link className={styles.actionCta} href={action.href}>
-                  {action.cta}
-                  <ArrowRight aria-hidden="true" size={15} />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Panel>
+    <aside className={styles.healthStack} aria-label="Indicateurs clés">
+     <Link className={styles.healthCard} href="/dashboard/human-review" data-tone={humanReviewCount > 0 ? "critical" : "neutral"}>
+      <span>Validation humaine</span>
+      <strong>{humanReviewCount}</strong>
+      <small>Dossiers bloquants</small>
+     </Link>
+     <Link className={styles.healthCard} href="/dashboard/demandes?status=qualified">
+      <span>Devis à générer</span>
+      <strong>{quoteableCount}</strong>
+      <small>Demandes qualifiées</small>
+     </Link>
+     <Link className={styles.healthCard} href="/dashboard/relances?status=overdue" data-tone={overdueFollowups.length > 0 ? "warning" : "neutral"}>
+      <span>Relances en retard</span>
+      <strong>{overdueFollowups.length}</strong>
+      <small>{scheduledFollowups.length} programmée(s)</small>
+     </Link>
+    </aside>
+   </section>
 
-      <section className={styles.guide} aria-label="Comment ça marche">
-        <p className={styles.guideTitle}>Comment ça marche</p>
-        <ol className={styles.steps}>
-          {STEPS.map((step) => (
-            <li key={step.n}>
-              <span className={styles.stepNum}>{step.n}</span>
-              <span>
-                <strong>{step.label}</strong>
-                <small>{step.hint}</small>
-              </span>
-            </li>
-          ))}
-        </ol>
-      </section>
-    </main>
-  );
+   <nav className={styles.pipelineStrip} aria-label="Résumé du pipeline">
+    {pipelineGroups.map((group) => (
+     <Link key={group.label} className={styles.pipelineItem} href={group.href}>
+      <span>{group.label}</span>
+      <strong>{group.value}</strong>
+      <small>{group.hint}</small>
+     </Link>
+    ))}
+   </nav>
+
+   <Panel title="Pipeline centralisé" subtitle="Une seule lecture par demande : statut, devis, relance et prochaine action.">
+   {leads.length === 0 ? (
+     <Note>Aucune demande enregistrée pour l’instant.</Note>
+    ) : (
+     <DataTable
+      columns={["Dossier", "Trajet", "Statut", "Prochaine action", "Devis", "Relance"]}
+      columnsTemplate="1.15fr 1.2fr .85fr 1.25fr .95fr .85fr"
+      rows={leads.slice(0, 12).map((lead) => {
+       const quote = quoteByLeadId.get(lead.id);
+       const followup = nextScheduledFollowup(lead.id, followups);
+       const action = getLeadCommercialAction({ lead, quote, followup });
+       return {
+        cells: [
+         leadDisplayName(lead),
+         leadRouteLabel(lead),
+         <StatusBadge key="status" status={lead.status} />,
+         <span className={styles.nextAction} data-tone={action.tone} key="action">
+          <strong>{action.label}</strong>
+          <small>{action.detail}</small>
+         </span>,
+         quoteLabel(quote),
+         followup ? formatCommercialDate(followup.dueAt) : "Aucune"
+        ],
+        href: `/dashboard/demandes/${lead.id}`
+       };
+      })}
+     />
+    )}
+   </Panel>
+
+   <Panel title="Traçabilité récente" subtitle="Dernières actions système ou commerciales, pour prouver ce qui a déjà été fait.">
+    {auditLogs.length === 0 ? (
+     <Note>Aucun événement d’audit enregistré.</Note>
+    ) : (
+     <DataTable
+      columns={["Heure", "Acteur", "Action", "Objet"]}
+      columnsTemplate=".8fr .7fr 1.35fr .8fr"
+      rows={auditLogs.slice(0, 8).map((log) => ({
+       cells: [formatDateTime(log.createdAt), log.actor, log.action, log.entityType],
+       href: log.entityType === "lead" ? `/dashboard/demandes/${log.entityId}` : undefined
+      }))}
+     />
+    )}
+   </Panel>
+  </main>
+ );
 }

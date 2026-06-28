@@ -51,7 +51,7 @@ export default function PartenairesPage() {
           Qu’il s’agisse de prestataires de transport, d’opérateurs terrain ou de services complémentaires, chaque
           partenaire contribue à offrir une expérience de mobilité plus fluide, plus sûre et mieux coordonnée.
         </p>
-        <Link className={styles.button} href="/demande">
+        <Link className={styles.button} href="/client/demande">
           Demarrer une demande
         </Link>
       </section>

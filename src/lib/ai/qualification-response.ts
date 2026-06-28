@@ -3,7 +3,7 @@ import type { LeadWarning } from "./chat-response";
 const NEXT_QUESTION: Record<string, string> = {
   departure_city: "Pour commencer, quelle est votre ville de départ ?",
   arrival_city: "Quelle est votre ville d'arrivée ?",
-  departure_date: "À quelle date souhaitez-vous partir ? (Ex. 11 juillet ou 2026-07-11.)",
+  departure_date: "À quelle date souhaitez-vous partir ? Une date approximative suffit pour avancer.",
   passenger_count: "Combien de passagers seront à bord ?",
   trip_type: "Souhaitez-vous un aller simple ou un aller-retour ?",
 };

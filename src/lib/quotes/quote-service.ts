@@ -137,6 +137,12 @@ export async function calculateQuoteForLead(
     },
   });
 
+  // Schedule followup emails (J+3, J+7) — dynamic import keeps server-only deps out of
+  // the test module graph; fire-and-forget so quote delivery is never blocked.
+  void import("../../features/followups/services/scheduleFollowups").then(
+    ({ scheduleFollowups }) => scheduleFollowups({ leadId, quoteId })
+  ).catch(() => {});
+
   return {
     ok: true,
     quoteId,

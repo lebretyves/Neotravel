@@ -14,18 +14,6 @@
   --gray: #e5e7eb;
 }
 
-html.text-size-normal {
-  font-size: 100%;
-}
-
-html.text-size-large {
-  font-size: 112.5%;
-}
-
-html.text-size-xlarge {
-  font-size: 125%;
-}
-
 * {
   box-sizing: border-box;
 }
@@ -40,6 +28,12 @@ body {
 button,
 textarea {
   font: inherit;
+}
+
+/* Links: no legacy underline by default (high-contrast mode re-adds it via !important). */
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
 .shell {
@@ -153,6 +147,19 @@ pre {
   }
 }
 
+/* --- Accessibility widget support (ported from fusion front) --- */
+html.text-size-normal {
+  font-size: 100%;
+}
+
+html.text-size-large {
+  font-size: 112.5%;
+}
+
+html.text-size-xlarge {
+  font-size: 125%;
+}
+
 :focus-visible {
   outline: 3px solid #d5a536;
   outline-offset: 3px;
@@ -179,8 +186,8 @@ pre {
 }
 
 html.high-contrast {
-  --background: #fff;
-  --foreground: #000;
+  --bg: #fff;
+  --text: #000;
 }
 
 html.high-contrast body {
@@ -232,10 +239,6 @@ html.reading-mode :where(main, section, article) {
   scroll-margin-top: 28px;
 }
 
-html.reading-mode :where([class*="card"], [class*="Card"], [class*="panel"], [class*="Panel"], [class*="box"], [class*="Box"]) {
-  box-shadow: 0 8px 24px rgba(6, 28, 62, 0.08) !important;
-}
-
 html.reduce-motion *,
 html.reduce-motion *::before,
 html.reduce-motion *::after {
@@ -243,15 +246,4 @@ html.reduce-motion *::after {
   animation-iteration-count: 1 !important;
   scroll-behavior: auto !important;
   transition-duration: 0.001ms !important;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: 0.001ms !important;
-  }
 }

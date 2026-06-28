@@ -11,6 +11,7 @@ export const runtime = "nodejs";
 
 const SyncInputSchema = z.object({
   leadId: z.string().uuid().optional(),
+  email: z.string().trim().email().optional().nullable(),
   departureCity: z.string().trim().min(1).optional().nullable(),
   arrivalCity: z.string().trim().min(1).optional().nullable(),
   departureDate: z.string().trim().min(1).optional().nullable(),
@@ -37,6 +38,7 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const incoming = {
+      email: body.email ?? undefined,
       departure_city: body.departureCity ?? undefined,
       arrival_city: body.arrivalCity ?? undefined,
       departure_date: body.departureDate ?? undefined,
@@ -104,8 +106,7 @@ export async function POST(request: Request): Promise<Response> {
     return chatJson(
       {
         status: "ERROR",
-        message: "Mise à jour impossible.",
-        ...(error instanceof Error ? { reviewReason: error.message } : {}),
+        message: "Nous n’avons pas pu mettre à jour votre demande. Réessayez dans un instant.",
       },
       { status: 400 },
     );

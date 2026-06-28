@@ -28,7 +28,7 @@ export default function ContactPage() {
           </p>
           <p data-i18n-key="Email : contact@neotravel.fr">Email : contact@neotravel.fr</p>
           <p data-i18n-key="Téléphone : 01 02 03 04 05">Téléphone : 01 02 03 04 05</p>
-          <Link className={styles.button} href="/demande">
+          <Link className={styles.button} href="/client/demande">
             Faire une demande
           </Link>
         </article>

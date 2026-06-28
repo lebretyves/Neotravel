@@ -1,0 +1,293 @@
+.flow,
+.logCard {
+ border: 1px solid #e3e9f1;
+ border-radius: 10px;
+ background: #ffffff;
+ box-shadow: 0 12px 28px -18px rgba(5, 13, 31, 0.16);
+}
+
+.flow {
+ padding: 20px 22px;
+ margin-bottom: 22px;
+}
+
+.flowHead {
+ display: flex;
+ justify-content: space-between;
+ align-items: flex-start;
+ gap: 16px;
+ margin-bottom: 18px;
+}
+
+.kicker {
+ margin: 0 0 4px;
+ color: #6b7890;
+ font-size: 10px;
+ font-weight: 900;
+ letter-spacing: 0.05em;
+ text-transform: uppercase;
+}
+
+.flowHead h2 {
+ margin: 0;
+ color: #0d2040;
+ font-size: 20px;
+}
+
+.routing {
+ display: inline-flex;
+ align-items: center;
+ gap: 6px;
+ border-radius: 7px;
+ padding: 5px 11px;
+ border: 1px solid transparent;
+ font-size: 11px;
+ font-weight: 800;
+ white-space: nowrap;
+}
+
+.routing[data-routing="AI_AUTO"] {
+ color: #0b7a4b;
+ background: #e3f6ec;
+ border-color: #c3ead4;
+}
+
+.routing[data-routing="HUMAN_REVIEW"] {
+ color: #b3261e;
+ background: #fdecec;
+ border-color: #f7cdcd;
+}
+
+.routing[data-routing="INCOMPLETE"] {
+ color: #8a5a06;
+ background: #fdf1d9;
+ border-color: #f6e2b4;
+}
+
+.stepper {
+ display: grid;
+ grid-template-columns: repeat(4, 1fr);
+ gap: 10px;
+ margin: 0;
+ padding: 0;
+ list-style: none;
+}
+
+.step {
+ display: grid;
+ gap: 4px;
+ padding: 14px 12px;
+ border: 1px solid #e8eef7;
+ border-radius: 8px;
+ background: #f7faff;
+}
+
+.step strong {
+ color: #1f2a3d;
+ font-size: 13px;
+}
+
+.step small {
+ color: #7c8aa0;
+ font-size: 11px;
+ line-height: 1.35;
+}
+
+.stepDot {
+ display: grid;
+ place-items: center;
+ width: 24px;
+ height: 24px;
+ margin-bottom: 4px;
+ border-radius: 999px;
+ background: #e2e8f2;
+ color: #5b6b85;
+ font-size: 11px;
+ font-weight: 900;
+}
+
+.step[data-state="done"] {
+ background: #eef4ff;
+ border-color: #dbe6fb;
+}
+
+.step[data-state="done"] .stepDot {
+ background: #123885;
+ color: #ffffff;
+}
+
+.step[data-state="current"] {
+ background: #fff8e7;
+ border-color: #f1ddae;
+}
+
+.step[data-state="current"] .stepDot {
+ background: #c49a43;
+ color: #ffffff;
+}
+
+.routingReason {
+ margin: 16px 0 0;
+ color: #5b6573;
+ font-size: 13px;
+ line-height: 1.5;
+}
+
+.routingReason strong {
+ color: #1f2a3d;
+}
+
+.logCard {
+ padding: 18px 20px;
+}
+
+.logHead {
+ display: flex;
+ justify-content: space-between;
+ align-items: center;
+ margin-bottom: 16px;
+}
+
+.logHead h2 {
+ margin: 0;
+ color: #0d2040;
+ font-size: 17px;
+}
+
+.live {
+ display: inline-flex;
+ align-items: center;
+ gap: 6px;
+ color: #0b7a4b;
+ font-size: 11px;
+ font-weight: 800;
+}
+
+.liveDot {
+ width: 8px;
+ height: 8px;
+ border-radius: 999px;
+ background: #16a34a;
+ animation: pulse 1.6s infinite;
+}
+
+@keyframes pulse {
+ 0% {
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5);
+ }
+ 70% {
+  box-shadow: 0 0 0 7px rgba(22, 163, 74, 0);
+ }
+ 100% {
+  box-shadow: 0 0 0 0 rgba(22, 163, 74, 0);
+ }
+}
+
+.timeline {
+ display: grid;
+ margin: 0;
+ padding: 0;
+ list-style: none;
+}
+
+.event {
+ position: relative;
+ display: grid;
+ grid-template-columns: 16px 1fr;
+ gap: 12px;
+ padding-bottom: 16px;
+}
+
+.event::before {
+ content: "";
+ position: absolute;
+ left: 7px;
+ top: 14px;
+ bottom: -2px;
+ width: 2px;
+ background: #e8eef7;
+}
+
+.event:last-child {
+ padding-bottom: 0;
+}
+
+.event:last-child::before {
+ display: none;
+}
+
+.eventDot {
+ width: 14px;
+ height: 14px;
+ margin-top: 3px;
+ border-radius: 999px;
+ border: 3px solid #ffffff;
+ box-shadow: 0 0 0 1px #e2e8f2;
+ background: #94a3b8;
+ z-index: 1;
+}
+
+.eventDot[data-tone="new"] {
+ background: #3b62c4;
+}
+
+.eventDot[data-tone="info"] {
+ background: #2a82c9;
+}
+
+.eventDot[data-tone="warning"] {
+ background: #dba23e;
+}
+
+.eventDot[data-tone="danger"] {
+ background: #d3493f;
+}
+
+.eventDot[data-tone="success"] {
+ background: #16a34a;
+}
+
+.eventDot[data-tone="muted"] {
+ background: #94a3b8;
+}
+
+.eventBody {
+ min-width: 0;
+}
+
+.eventTop {
+ display: flex;
+ justify-content: space-between;
+ align-items: baseline;
+ gap: 10px;
+}
+
+.eventTop strong {
+ color: #1f2a3d;
+ font-size: 13px;
+}
+
+.eventTop time {
+ color: #8a97a8;
+ font-size: 11px;
+ white-space: nowrap;
+}
+
+.eventBody p {
+ margin: 3px 0 2px;
+ color: #5b6573;
+ font-size: 12px;
+ line-height: 1.45;
+}
+
+.eventBody small {
+ color: #8a97a8;
+ font-size: 11px;
+ font-weight: 700;
+}
+
+@media (max-width: 760px) {
+ .stepper {
+  grid-template-columns: repeat(2, 1fr);
+ }
+}

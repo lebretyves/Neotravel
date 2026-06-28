@@ -28,7 +28,7 @@ function entityHref(log: AuditLog) {
   const entityId = typeof originalEntityId === "string" ? originalEntityId : log.entityId;
 
   if (log.entityType === "lead") return `/dashboard/demandes/${entityId}`;
-  if (log.entityType === "quote") return `/devis/${entityId}`;
+  if (log.entityType === "quote") return `/client/devis/${entityId}`;
   return null;
 }
 

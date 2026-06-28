@@ -8,7 +8,7 @@ export function LandingQuoteForm() {
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    router.push("/demande");
+    router.push("/client/demande");
   }
 
   return (

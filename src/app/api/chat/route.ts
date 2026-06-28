@@ -1,4 +1,3 @@
-import { createOpenAI } from "@ai-sdk/openai";
 import { generateText, NoObjectGeneratedError, RetryError, APICallError, type ModelMessage } from "ai";
 
 import { containsPromptInjectionAttempt, NEOTRAVEL_SYSTEM_PROMPT } from "../../../lib/ai/prompt";
@@ -9,9 +8,12 @@ import { getLeadById, markHumanReview, markLeadIncomplete } from "../../../lib/l
 import { normalizeExtraction } from "../../../lib/ai/normalize-extraction";
 import { buildExistingQualification, mergeLead } from "../../../lib/ai/merge-existing";
 import { buildQualificationResponse } from "../../../lib/ai/qualification-response";
+import { generateAssistantReply, type ReplyTurn } from "../../../lib/ai/generate-reply";
 import { extractTurnFacts } from "../../../lib/ai/extract-turn-facts";
 import { detectIntermediateStops } from "../../../lib/ai/detect-intermediate-stops";
 import { validateLead } from "../../../lib/ai/validate-lead";
+import { getChatModel } from "../../../lib/ai/provider";
+import { sanitizeExtractionDelta } from "../../../lib/ai/sanitize-extraction-delta";
 
 export const runtime = "nodejs";
 const DEFAULT_QUALIFICATION_TIMEOUT_MS = 30_000;
@@ -48,7 +50,7 @@ export async function POST(request: Request): Promise<Response> {
       return chatJson(
         {
           status: "ERROR",
-          message: "Message utilisateur manquant.",
+          message: "Votre message est vide. Ajoutez quelques informations sur votre trajet.",
         },
         { status: 400 },
       );
@@ -61,22 +63,22 @@ export async function POST(request: Request): Promise<Response> {
         {
           status: "HUMAN_REVIEW",
           message:
-            "Je ne peux pas contourner les règles tarifaires. Le prix doit être calculé uniquement par calculer_devis().",
+            "Les règles tarifaires ne peuvent pas être modifiées depuis la conversation. Un conseiller peut vérifier votre demande.",
           reviewReason: "PROMPT_INJECTION_ATTEMPT",
         },
         { status: 200 },
       );
     }
 
-    const aiApiKey = process.env.AI_API_KEY;
+    const chatModel = getChatModel();
 
-    if (!aiApiKey) {
-      logAgentEvent(requestId, "request_failed", { reason: "MISSING_AI_API_KEY" }, startedAt);
+    if (!chatModel) {
+      logAgentEvent(requestId, "request_failed", { reason: "MISSING_AI_PROVIDER_KEY" }, startedAt);
 
       return chatJson(
         {
           status: "ERROR",
-          message: "AI_API_KEY est manquant. Configurez la clé pour activer l'agent IA.",
+          message: "Le service de conversation est momentanément indisponible. Réessayez dans un instant.",
         },
         { status: 503 },
       );
@@ -90,16 +92,11 @@ export async function POST(request: Request): Promise<Response> {
       }
     }
 
-    const modelId = process.env.AI_MODEL_ID ?? "openai/gpt-oss-120b:free";
-    const openrouter = createOpenAI({
-      baseURL: "https://openrouter.ai/api/v1",
-      apiKey: aiApiKey,
-    });
     const qualificationTimeoutMs = getQualificationTimeoutMs();
     logAgentEvent(
       requestId,
       "qualification_started",
-      { model: modelId, timeoutMs: qualificationTimeoutMs },
+      { provider: chatModel.provider, model: chatModel.modelId, timeoutMs: qualificationTimeoutMs },
       startedAt,
     );
     const contextHint = Object.keys(existingQualification).length > 0
@@ -118,7 +115,7 @@ export async function POST(request: Request): Promise<Response> {
     // We ask for raw JSON and parse it tolerantly (raw / fenced / embedded) instead.
     const textResult = await withTimeout(
       generateText({
-        model: openrouter(modelId),
+        model: chatModel.model,
         system: NEOTRAVEL_SYSTEM_PROMPT,
         prompt: `Extrait les informations de transport NOUVELLEMENT fournies dans ce message utilisateur.
 Date du jour : ${todayIso} (utilise-la uniquement pour convertir les dates en YYYY-MM-DD).${contextHint}${conversationHint}
@@ -127,6 +124,9 @@ SÉMANTIQUE MÉTIER :
 - Une localisation actuelle du prospect ou du groupe est la ville de départ, sauf s'il indique explicitement un autre départ.
 - Une destination annoncée est la ville d'arrivée.
 - Une correction explicite remplace seulement le champ concerné.
+- Interprète les fautes de frappe courantes si l'intention reste claire : "je part de paris" = departure_city Paris, "a montpellier" = arrival_city Montpellier.
+- Corrige prudemment les fautes d'orthographe évidentes sur les villes quand l'intention est claire : "pariss" -> "Paris", "montpelier" -> "Montpellier". Si tu n'es pas sûr, garde le texte utilisateur.
+- Si le message répond directement à la dernière question avec une valeur courte (ex. "Paris" après une question sur la ville de départ), extrais cette valeur dans le champ demandé.
 - Retourne uniquement les champs réellement présents ou corrigés dans ce message ; ne répète pas l'état déjà collecté.
 
 DATES (toujours au format YYYY-MM-DD) :
@@ -150,12 +150,44 @@ Message : ${latestUserText}`,
       }),
       qualificationTimeoutMs,
     );
+    // Conversational reply generator — a short, contextual second pass. Text only:
+    // it never decides status/price/distance. Falls back to deterministic templates.
+    const replyConversation: ReplyTurn[] = messages
+      .filter((m): m is ModelMessage & { role: "user" | "assistant" } =>
+        m.role === "user" || m.role === "assistant")
+      .map((m) => ({ role: m.role, content: getMessageText(m.content) }))
+      .filter((turn) => turn.content.trim().length > 0)
+      .slice(-6);
+    const generateReply = (prompt: string) =>
+      withTimeout(
+        generateText({
+          model: chatModel.model,
+          system: NEOTRAVEL_SYSTEM_PROMPT,
+          prompt,
+          temperature: 0.5,
+          abortSignal: AbortSignal.timeout(qualificationTimeoutMs),
+        }),
+        qualificationTimeoutMs,
+      ).then((result) => result.text);
+
     const parseResult = ExtractionDeltaSchema.safeParse(extractJsonFromText(textResult.text));
-    const extractedDelta: ExtractionDelta = parseResult.success ? parseResult.data : {};
-    const deterministicFacts = extractTurnFacts(latestUserText, existingQualification, today);
+    const rawExtractedDelta: ExtractionDelta = parseResult.success ? parseResult.data : {};
+    const deterministicFacts = extractTurnFacts(latestUserText, existingQualification, today, lastAssistantText);
     const deterministicStops = detectIntermediateStops(latestUserText);
+    const extractedDelta = sanitizeExtractionDelta(
+      rawExtractedDelta,
+      deterministicFacts,
+      existingQualification,
+    );
+    const combinedDelta = {
+      ...extractedDelta,
+      ...deterministicFacts,
+      ...deterministicStops,
+      departure_city: extractedDelta.departure_city ?? deterministicFacts.departure_city,
+      arrival_city: extractedDelta.arrival_city ?? deterministicFacts.arrival_city,
+    };
     const normalizedDelta = normalizeExtraction(
-      { ...extractedDelta, ...deterministicFacts, ...deterministicStops },
+      combinedDelta,
       existingQualification,
     );
     const mergedLead = LeadQualificationSchema.parse({
@@ -169,12 +201,16 @@ Message : ${latestUserText}`,
     const lead = sanitized;
     const blocking = warnings.some((warning) => warning.blocking);
     const missing = detectMissingFields(lead);
+    const lastTurnAddedUsableInfo = hasNewUsableLeadInfo(existingQualification, lead);
 
     logAgentEvent(requestId, "extraction_debug", {
-      raw: extractedDelta,
+      raw: rawExtractedDelta,
+      sanitizedRaw: extractedDelta,
       deterministicFacts,
       deterministicStops,
+      combinedDelta,
       normalized: normalizedDelta,
+      lastTurnAddedUsableInfo,
       warnings: warnings.map((w) => w.code),
       review,
       missing: missing.missing_fields,
@@ -260,7 +296,20 @@ Message : ${latestUserText}`,
         await markLeadIncomplete(leadResult.leadId, missing.missing_fields);
       }
 
-      const conversationalMessage = buildQualificationResponse(warnings, missing.missing_fields);
+      const conversationalMessage = await generateAssistantReply(
+        {
+          status: "INCOMPLETE",
+          collected: extractedFields as unknown as Record<string, unknown>,
+          missingFields: missing.missing_fields,
+          warnings,
+          conversation: replyConversation,
+          lastTurnAddedUsableInfo,
+        },
+        {
+          generate: generateReply,
+          fallback: buildQualificationResponse(warnings, missing.missing_fields),
+        },
+      );
 
       logAgentEvent(
         requestId,
@@ -290,7 +339,18 @@ Message : ${latestUserText}`,
       .filter(Boolean)
       .join(", ");
 
-    const qualifiedMessage = `Parfait, j'ai toutes les informations pour votre trajet (${qualifiedSummary}). Cliquez sur "Recevoir mon devis" pour obtenir votre estimation.`;
+    const qualifiedFallback = `Parfait, j'ai toutes les informations pour votre trajet (${qualifiedSummary}). Cliquez sur "Recevoir mon devis" pour obtenir votre estimation.`;
+    const qualifiedMessage = await generateAssistantReply(
+      {
+        status: "QUALIFIED",
+        collected: extractedFields as unknown as Record<string, unknown>,
+        missingFields: [],
+        warnings,
+        conversation: replyConversation,
+        lastTurnAddedUsableInfo,
+      },
+      { generate: generateReply, fallback: qualifiedFallback },
+    );
 
     logAgentEvent(
       requestId,
@@ -345,18 +405,17 @@ Message : ${latestUserText}`,
 
     const message =
       reason === "QUALIFICATION_TIMEOUT"
-        ? "La qualification IA a expiré. Réessayez ou passez en reprise humaine."
+        ? "Le traitement prend trop de temps. Réessayez dans un instant ou contactez-nous."
         : reason === "AI_NO_OBJECT_GENERATED"
-          ? "Le modèle n'a pas pu structurer la demande. Réessayez dans quelques instants."
+          ? "Nous n’avons pas pu comprendre toutes les informations. Reformulez votre demande en quelques mots."
           : reason === "AI_SERVICE_UNAVAILABLE" || reason === "AI_API_CALL_ERROR"
-            ? "Le service IA est temporairement indisponible. Réessayez dans quelques secondes."
-            : "La demande n'a pas pu être traitée.";
+            ? "Le service de conversation est momentanément indisponible. Réessayez dans un instant."
+            : "Votre demande n’a pas pu être traitée. Réessayez dans un instant.";
 
     return chatJson(
       {
         status: "ERROR",
         message,
-        reviewReason: reason,
         ...(shouldLogAgentEvents() && error instanceof Error
           ? { _debug: `${error.name}: ${error.message}` }
           : {}),
@@ -531,6 +590,40 @@ function extractLeadIdFromBody(body: unknown): string | undefined {
   return undefined;
 }
 
+const USABLE_LEAD_FIELDS = [
+  "name",
+  "organization",
+  "email",
+  "departure_city",
+  "arrival_city",
+  "departure_date",
+  "return_date",
+  "passenger_count",
+  "trip_type",
+  "has_intermediate_stop",
+  "intermediate_stops",
+  "options",
+] as const;
+
+function hasNewUsableLeadInfo(
+  before: LeadQualification,
+  after: LeadQualification,
+): boolean {
+  return USABLE_LEAD_FIELDS.some((field) => {
+    const previous = normalizeComparableLeadValue(before[field]);
+    const next = normalizeComparableLeadValue(after[field]);
+
+    return next !== "" && next !== previous;
+  });
+}
+
+function normalizeComparableLeadValue(value: unknown): string {
+  if (value === undefined || value === null) return "";
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) return JSON.stringify(value.filter(Boolean).map(String).sort());
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
 
 function extractRetryErrorDetails(error: unknown): Record<string, unknown> {
   if (!(error instanceof RetryError)) return {};

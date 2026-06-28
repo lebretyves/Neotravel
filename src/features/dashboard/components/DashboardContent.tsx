@@ -9,11 +9,11 @@ import styles from "./dashboard.module.css";
  * (le `key` force le remount du conteneur), pour des transitions fluides.
  */
 export function DashboardContent({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
+ const pathname = usePathname();
 
-  return (
-    <div key={pathname} className={styles.routeContent}>
-      {children}
-    </div>
-  );
+ return (
+  <div key={pathname} className={styles.routeContent}>
+   {children}
+  </div>
+ );
 }

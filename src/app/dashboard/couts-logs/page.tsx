@@ -1,5 +1,7 @@
 import { CostsLogsDashboardPage } from "@/features/dashboard/components/DashboardViews";
+import { requirePermission } from "@/shared/lib/auth/requireAdmin";
 
 export default async function DashboardCostsLogsPage() {
-  return <CostsLogsDashboardPage />;
+ await requirePermission("costs_logs");
+ return <CostsLogsDashboardPage />;
 }

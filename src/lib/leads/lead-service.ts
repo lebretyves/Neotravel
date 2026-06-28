@@ -2,6 +2,7 @@ import type { LeadStatus } from "../domain/status";
 import type { QuoteOptions, TripType } from "../domain/types";
 import { logAuditEvent } from "../audit/audit-service";
 import { createServerSupabaseClient } from "../supabase/server";
+import { triggerHumanReview } from "../../shared/lib/n8n/triggerHumanReview";
 
 export type LeadRecord = {
   id: string;
@@ -97,4 +98,7 @@ export async function markHumanReview(leadId: string, reason: string): Promise<v
     action: "LEAD_MARKED_HUMAN_REVIEW",
     metadata: { reason },
   });
+
+  // Fire-and-forget — n8n notification does not block the lead update.
+  triggerHumanReview({ leadId, reason }).catch(() => {});
 }

@@ -39,6 +39,18 @@ function toModelRun(row: ModelRunRow): ModelRun {
   };
 }
 
+function isMissingModelRunsTable(error: { code?: string; message?: string }) {
+  return error.code === "PGRST205" || error.message?.includes("model_runs");
+}
+
+function createVolatileModelRun(input: Omit<ModelRun, "id" | "createdAt">): ModelRun {
+  return {
+    ...input,
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString()
+  };
+}
+
 export async function createModelRunRecord(input: Omit<ModelRun, "id" | "createdAt">) {
   if (shouldUseDemoData()) return demoStore.createModelRun(input);
 
@@ -62,6 +74,7 @@ export async function createModelRunRecord(input: Omit<ModelRun, "id" | "created
     .select("id, lead_id, purpose, provider, model, prompt_tokens, completion_tokens, estimated_cost_eur, latency_ms, input_hash, output_hash, status, error_message, created_at")
     .single();
 
+  if (error && isMissingModelRunsTable(error)) return createVolatileModelRun(input);
   if (error) throw error;
   return toModelRun(data as ModelRunRow);
 }
@@ -75,6 +88,7 @@ export async function listModelRuns() {
     .select("id, lead_id, purpose, provider, model, prompt_tokens, completion_tokens, estimated_cost_eur, latency_ms, input_hash, output_hash, status, error_message, created_at")
     .order("created_at", { ascending: false });
 
+  if (error && isMissingModelRunsTable(error)) return [];
   if (error) throw error;
   return (data as ModelRunRow[]).map(toModelRun);
 }
