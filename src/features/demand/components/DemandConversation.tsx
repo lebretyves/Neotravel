@@ -177,6 +177,45 @@ function buildInitialDemandView(initialDemand: InitialDemand) {
  };
 }
 
+function buildChatRouteLabel(draft: DemandDraft | null) {
+ if (draft?.departureCity && draft.arrivalCity) return `${draft.departureCity} - ${draft.arrivalCity}`;
+ if (draft?.departureCity) return draft.departureCity;
+ if (draft?.arrivalCity) return draft.arrivalCity;
+ return null;
+}
+
+function buildContextualAssistantMessage(payload: ChatApiResponse, draft: DemandDraft | null, missingFieldKeys: string[]) {
+ if (payload.status === "HUMAN_REVIEW") {
+  return `Merci. Cette demande doit etre reprise par un conseiller${
+   payload.humanReviewReasons?.length ? ` : ${payload.humanReviewReasons.join(", ")}` : "."
+  }`;
+ }
+
+ const businessMissingFields = missingFieldKeys.filter((field) => field !== "organization" && field !== "email");
+ const routeLabel = buildChatRouteLabel(draft);
+
+ if (!draft?.departureCity) return "Quel est votre lieu de depart ?";
+ if (!draft.arrivalCity) return `Ok, votre lieu de depart est ${draft.departureCity}. Quelle est la ville d'arrivee ?`;
+ if (businessMissingFields.includes("departureDate")) {
+  return `Trajet ${routeLabel} note. Quelle est la date de depart ?`;
+ }
+ if (businessMissingFields.includes("passengerCount")) {
+  return `Parfait pour ${routeLabel}. Combien de passagers faut-il prevoir ?`;
+ }
+ if (businessMissingFields.includes("tripType")) {
+  return `Merci. Pour ${routeLabel}, souhaitez-vous un aller simple ou un aller-retour ?`;
+ }
+ if (draft.tripType === "round_trip" && businessMissingFields.includes("returnDate")) {
+  return `Aller-retour note pour ${routeLabel}. Quelle est la date de retour ?`;
+ }
+ if (businessMissingFields.length) {
+  const labels = businessMissingFields.map((field) => missingFieldLabels[field as keyof DemandDraft] ?? field);
+  return `Merci. Il manque encore : ${labels.join(", ")}.`;
+ }
+
+ return `Merci, les informations principales sont completes${routeLabel ? ` pour ${routeLabel}` : ""}. Vous pouvez recevoir le devis.`;
+}
+
 function progressClassName(state: ProgressStepState) {
  if (state === "done") return styles.doneStep;
  if (state === "current") return styles.currentStep;
@@ -240,6 +279,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
  const [isChatLoading, setIsChatLoading] = useState(false);
  const demandDraft = chatDraft ?? initialDemandDraft;
  const hasDemand = hasInitialDemand || Boolean(chatDraft);
+ const hasConversationStarted = hasDemand || chatTurns.length > 0;
  const demand = useMemo(() => (chatDraft ? viewFromDraft(chatDraft, initialDemandView) : initialDemandView), [
   chatDraft,
   initialDemandView
@@ -325,18 +365,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
    const effectiveMissingFields = mergedDraft
     ? validateDemandCompleteness(mergedDraft).missingFields.map(String)
     : payload.missingFields ?? [];
-   const nextMissingFields = effectiveMissingFields
-    .map((field) => missingFieldLabels[field as keyof DemandDraft] ?? field)
-    .filter((field) => field !== missingFieldLabels.organization && field !== missingFieldLabels.email);
-   const questions = payload.clarification?.questions?.filter(Boolean) ?? [];
-   const routeHint =
-    mergedDraft?.departureCity && mergedDraft.arrivalCity ? `${mergedDraft.departureCity} - ${mergedDraft.arrivalCity}` : null;
-   const assistantContent =
-    payload.status === "HUMAN_REVIEW"
-     ? `Merci. Cette demande doit etre reprise par un conseiller${payload.humanReviewReasons?.length ? ` : ${payload.humanReviewReasons.join(", ")}` : "."}`
-     : nextMissingFields.length
-      ? `J'ai ${routeHint ? `detecte ${routeHint}. ` : "commence la qualification. "}Il manque encore : ${nextMissingFields.join(", ")}.${questions.length ? ` ${questions.join(" ")}` : ""}`
-      : `Merci, les informations principales sont completes${routeHint ? ` pour ${routeHint}` : ""}. Vous pouvez recevoir le devis.`;
+   const assistantContent = buildContextualAssistantMessage(payload, mergedDraft, effectiveMissingFields);
 
    setChatTurns((current) => [...current, { role: "assistant", content: assistantContent }]);
    setChatInput("");
@@ -622,18 +651,20 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
         <p>Bonjour, comment puis-je vous aider a organiser votre trajet de groupe ?</p>
        </div>
       )}
-      <div className={`${styles.message} ${styles.assistant}`}>
-       <strong data-i18n-key="NeoTravel IA">NeoTravel IA</strong>
-       <p>
-        {hasDemand && missingFields.length
-         ? requiresHumanReview
-          ? `Merci. Il manque encore : ${demoBlockingMissingFields.join(", ")}. Le dossier passe en reprise humaine.`
-          : `Merci. Il manque encore : ${demoBlockingMissingFields.join(", ")}.`
-         : hasDemand
-          ? "Merci, les informations principales sont completes pour preparer le devis."
-          : "Indiquez simplement votre depart, votre arrivee, la date et le nombre de passagers."}
-       </p>
-      </div>
+      {chatTurns.length === 0 ? (
+       <div className={`${styles.message} ${styles.assistant}`}>
+        <strong data-i18n-key="NeoTravel IA">NeoTravel IA</strong>
+        <p>
+         {hasDemand && missingFields.length
+          ? requiresHumanReview
+           ? `Merci. Il manque encore : ${demoBlockingMissingFields.join(", ")}. Le dossier passe en reprise humaine.`
+           : `Merci. Il manque encore : ${demoBlockingMissingFields.join(", ")}.`
+          : hasDemand
+           ? "Merci, les informations principales sont completes pour preparer le devis."
+           : "Indiquez simplement votre depart, votre arrivee, la date et le nombre de passagers."}
+        </p>
+       </div>
+      ) : null}
      </div>
 
      <form
@@ -682,7 +713,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
          ? "Creation du devis..."
          : hasQuoteReadyDemand
           ? "Recevoir mon devis"
-          : hasDemand
+          : hasConversationStarted
            ? "Completer avec le chat"
            : "Demarrer avec le chat"}
        </button>
