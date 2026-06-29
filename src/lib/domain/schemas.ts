@@ -4,8 +4,11 @@ export const TripTypeSchema = z.enum(["one_way", "round_trip"]);
 
 export const ExtractionDeltaSchema = z.object({
   name: z.string().trim().min(1).optional(),
+  contact_name: z.string().trim().min(1).optional(),
+  client_type: z.string().trim().min(1).optional(),
   organization: z.string().trim().min(1).optional(),
   email: z.string().trim().email().optional(),
+  phone: z.string().trim().min(1).optional(),
   departure_city: z.string().trim().min(1).optional(),
   arrival_city: z.string().trim().min(1).optional(),
   departure_date: z.string().trim().optional(),
@@ -18,8 +21,11 @@ export type ExtractionDelta = z.infer<typeof ExtractionDeltaSchema>;
 
 export const LeadQualificationSchema = z.object({
   name: z.string().trim().min(1).optional(),
+  contact_name: z.string().trim().min(1).optional(),
+  client_type: z.string().trim().min(1).optional(),
   organization: z.string().trim().min(1).optional(),
   email: z.string().trim().email().optional(),
+  phone: z.string().trim().min(1).optional(),
   departure_city: z.string().trim().min(1).optional(),
   arrival_city: z.string().trim().min(1).optional(),
   departure_date: z.string().trim().min(1).optional(),

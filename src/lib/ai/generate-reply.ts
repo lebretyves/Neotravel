@@ -1,4 +1,11 @@
 import type { LeadWarning } from "./chat-response";
+import type { ChatLanguage } from "./chat-locale";
+import {
+  localizedNoNewInfo,
+  localizedReadyDefault,
+  localizedTripTypePrompt,
+  replyLanguageInstruction,
+} from "./chat-locale";
 import { buildQualificationResponse } from "./qualification-response";
 
 export type ReplyTurn = { role: "user" | "assistant"; content: string };
@@ -15,6 +22,7 @@ export type ReplyContext = {
   /** Recent conversation (oldest → newest), already trimmed by the caller. */
   conversation: readonly ReplyTurn[];
   lastTurnAddedUsableInfo?: boolean;
+  language?: ChatLanguage;
 };
 
 const FIELD_LABELS: Record<string, { label: string; noun: string }> = {
@@ -47,16 +55,8 @@ function questionFor(field: string) {
   return NEXT_QUESTION[field] ?? `Pouvez-vous préciser ${labelFor(field)} ?`;
 }
 
-function buildNoNewInfoResponse(field: string) {
-  if (field === "departure_date") {
-    return "Je n’ai pas encore la date de départ. Elle peut être approximative pour commencer, mais il m’en faut une pour préparer le devis.";
-  }
-
-  if (field === "passenger_count") {
-    return "Je n’ai pas encore le nombre de passagers. Un ordre de grandeur suffit pour avancer.";
-  }
-
-  return `Je n’ai pas encore ${nounFor(field)}. ${questionFor(field)}`;
+function buildNoNewInfoResponse(field: string, language: ChatLanguage) {
+  return localizedNoNewInfo(field, language);
 }
 
 /**
@@ -66,6 +66,7 @@ function buildNoNewInfoResponse(field: string) {
  * the next missing field.
  */
 export function buildReplyPrompt(ctx: ReplyContext): string {
+  const language = ctx.language ?? "FR";
   const transcript = ctx.conversation
     .map((turn) => `${turn.role === "user" ? "Client" : "Assistant"} : ${turn.content}`)
     .join("\n");
@@ -93,7 +94,7 @@ export function buildReplyPrompt(ctx: ReplyContext): string {
 
   const objective =
     ctx.status === "QUALIFIED"
-      ? `Toutes les informations nécessaires sont réunies. Confirme-le brièvement et invite le client à cliquer sur le bouton "Recevoir mon devis".`
+      ? `Toutes les informations necessaires sont reunies. Confirme-le brievement et invite le client a cliquer sur le bouton "Recevoir mon devis" pour generer son estimation. Le devis n'est PAS encore genere : ne dis pas qu'il est pret ni qu'il se prepare.`
       : `Il manque des informations. Termine ta réponse en demandant UNIQUEMENT la première information manquante : "${ctx.missingFields.map(labelFor)[0] ?? ""}".`;
 
   return `Tu es l'assistant NeoTravel, tu qualifies par chat une demande de transport de groupe en autocar.
@@ -109,7 +110,7 @@ Signal du dernier tour : ${latestTurnSignal}
 Objectif de ta réponse : ${objective}
 
 Règles impératives :
-- Réponds en français, ton professionnel et chaleureux, 1 à 3 phrases maximum.
+- ${replyLanguageInstruction(language)}, ton professionnel et chaleureux, 1 à 3 phrases maximum.
 - Réagis au dernier message comme un conseiller humain : reconnais l'information réellement donnée, puis fais avancer la qualification.
 - Si le dernier message du client corrige une information, accuse réception explicitement de la correction.
 - Si le signal indique qu'aucune information exploitable n'a été ajoutée, ne remercie pas pour des précisions inexistantes : dis simplement l'information qui manque et pourquoi elle est nécessaire.
@@ -135,8 +136,9 @@ export async function generateAssistantReply(
     fallback?: string;
   },
 ): Promise<string> {
+  const language = ctx.language ?? "FR";
   const fallback =
-    deps.fallback ?? buildQualificationResponse(ctx.warnings, ctx.missingFields);
+    deps.fallback ?? buildQualificationResponse(ctx.warnings, ctx.missingFields, language);
   const firstMissingField = ctx.missingFields[0];
 
   if (
@@ -145,8 +147,8 @@ export async function generateAssistantReply(
     firstMissingField === "trip_type"
   ) {
     return ctx.lastTurnAddedUsableInfo
-      ? "C’est noté. Souhaitez-vous un aller simple ou un aller-retour ?"
-      : buildNoNewInfoResponse(firstMissingField);
+      ? localizedTripTypePrompt(language)
+      : buildNoNewInfoResponse(firstMissingField, language);
   }
 
   if (
@@ -155,7 +157,7 @@ export async function generateAssistantReply(
     firstMissingField &&
     ctx.lastTurnAddedUsableInfo === false
   ) {
-    return buildNoNewInfoResponse(firstMissingField);
+    return buildNoNewInfoResponse(firstMissingField, language);
   }
 
   try {

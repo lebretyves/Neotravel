@@ -203,14 +203,14 @@ export async function QuoteClientView({ quoteId }: { quoteId: string }) {
 
             {optionLines.length ? (
               <div className={styles.optionDetail}>
-                <h3>Options demandees</h3>
+                <h3>Options demandées</h3>
                 {optionLines.map((option) => (
                   <div className={styles.optionDetailLine} key={option.code}>
                     <span>{option.label}</span>
                     <span>
                       {option.amountEur && option.amountEur > 0
-                        ? formatEuro(option.amountEur)
-                        : `${option.note ?? "À confirmer"} — 0 € placeholder MVP`}
+                        ? `${formatEuro(option.amountEur)}${option.note ? ` — ${option.note}` : ""}`
+                        : option.note ?? "À confirmer"}
                     </span>
                   </div>
                 ))}
@@ -220,7 +220,7 @@ export async function QuoteClientView({ quoteId }: { quoteId: string }) {
             <div className={styles.validationAndTotals}>
               <div className={styles.validationBox}>
                 <h3>Référence devis</h3>
-                <p>Date d&apos;emission : {new Date().toLocaleDateString("fr-FR")}</p>
+                <p>Date d&apos;émission : {new Date().toLocaleDateString("fr-FR")}</p>
                 <p>Référence : {calculation.quoteNumber}</p>
                 <p>Devis détaillé et sans engagement, valable 7 jours.</p>
               </div>
@@ -257,7 +257,7 @@ export async function QuoteClientView({ quoteId }: { quoteId: string }) {
             </div>
             <div>
               <h3>Validation NeoTravel</h3>
-              <p>Genere automatiquement apres validation regles metier.</p>
+              <p>Généré automatiquement après validation règles métier.</p>
             </div>
           </div>
 

@@ -9,22 +9,22 @@ import styles from "./home.module.css";
 const projectCards = [
   {
     title: "Sorties scolaires",
-    body: "Groupes scolaires, associations et clubs avec trajet verifie et suivi commercial.",
+    body: "Groupes scolaires, associations et clubs avec trajet vérifié et suivi commercial.",
   },
   {
-    title: "Seminaires & entreprises",
-    body: "Transferts gares, aeroports, sites industriels et evenements d'entreprise.",
+    title: "Séminaires & entreprises",
+    body: "Transferts gares, aéroports, sites industriels et événements d'entreprise.",
   },
   {
-    title: "Sport & evenements",
-    body: "Equipes, supporters et federations — reprise humaine pour les trajets hors standard.",
+    title: "Sport & événements",
+    body: "Équipes, supporters et fédérations — reprise humaine pour les trajets hors standard.",
   },
 ];
 
 const engagementCards = [
-  { title: "Prix calcule", body: "Tarif deterministe base sur la distance, le vehicule et la date." },
+  { title: "Prix calculé", body: "Tarif déterministe basé sur la distance, le véhicule et la date." },
   { title: "Rappel conseiller", body: "Un conseiller reprend le dossier si la demande sort du cadre automatique." },
-  { title: "Suivi complet", body: "Chaque etape — devis, validation, relance — est tracee et auditable." },
+  { title: "Suivi complet", body: "Chaque étape — devis, validation, relance — est tracée et auditable." },
 ];
 
 const trustpilotReviews = [
@@ -35,8 +35,8 @@ const trustpilotReviews = [
   },
   {
     id: "company",
-    source: "Responsable seminaire",
-    text: "Reservation lisible, options bien suivies et reprise humaine quand le dossier devient sensible.",
+    source: "Responsable séminaire",
+    text: "Réservation lisible, options bien suivies et reprise humaine quand le dossier devient sensible.",
   },
   {
     id: "sport",
@@ -79,8 +79,8 @@ export default function HomePage() {
           <p className={styles.badge}>Transport de groupes avec chauffeur</p>
           <h1 id="hero-title">Location de car avec chauffeur</h1>
           <p>
-            NeoTravel calcule votre devis en ligne et transmet les dossiers complexes a un
-            conseiller. De 20 a 85 passagers, aller simple ou aller-retour.
+            NeoTravel calcule votre devis en ligne et transmet les dossiers complexes à un
+            conseiller. De 20 à 85 passagers, aller simple ou aller-retour.
           </p>
         </div>
       </section>
@@ -88,7 +88,7 @@ export default function HomePage() {
       <section
         className={styles.estimationBand}
         id="estimation"
-        aria-label="Definissez votre projet"
+        aria-label="Définissez votre projet"
       >
         <LandingQuoteForm />
       </section>
@@ -111,21 +111,21 @@ export default function HomePage() {
       <section className={styles.partnerSection} id="partenaires">
         <div>
           <p className={styles.kicker}>Partenaires autocaristes</p>
-          <h2>Un reseau de transporteurs verifies</h2>
+          <h2>Un réseau de transporteurs vérifiés</h2>
           <p>
-            NeoTravel prepare le dossier et transmet au partenaire adapte selon la zone, la
-            capacite et le type de trajet.
+            NeoTravel prépare le dossier et transmet au partenaire adapté selon la zone, la
+            capacité et le type de trajet.
             <br />
-            La disponibilite est confirmee par un conseiller avant tout engagement.
+            La disponibilité est confirmée par un conseiller avant tout engagement.
           </p>
           <Link className={styles.secondaryButton} href="/client/partenaires">
             En savoir plus
           </Link>
         </div>
         <ul className={styles.partnerFacts}>
-          <li>Selection selon zone geographique, capacite et contraintes du trajet.</li>
-          <li>Aucun vehicule engage sans validation partenaire.</li>
-          <li>Reprise humaine systematique pour les trajets hors grille tarifaire.</li>
+          <li>Sélection selon zone géographique, capacité et contraintes du trajet.</li>
+          <li>Aucun véhicule engagé sans validation partenaire.</li>
+          <li>Reprise humaine systématique pour les trajets hors grille tarifaire.</li>
         </ul>
       </section>
 
@@ -148,7 +148,7 @@ export default function HomePage() {
         <div className={styles.trustScore}>
           <p className={styles.kicker}>Avis Trustpilot</p>
           <h2>Excellent 4.9/5</h2>
-          <span aria-label="5 etoiles">★★★★★</span>
+          <span aria-label="5 étoiles">★★★★★</span>
         </div>
         <div className={styles.reviewTicker} aria-live="off">
           <div className={styles.reviewTrack}>
@@ -164,10 +164,10 @@ export default function HomePage() {
       </section>
 
       <footer className={styles.footer} id="suivi">
-        <Link href="/client/mentions-legales">Mentions legales</Link>
-        <Link href="/client/confidentialite">Confidentialite</Link>
+        <Link href="/client/mentions-legales">Mentions légales</Link>
+        <Link href="/client/confidentialite">Confidentialité</Link>
         <Link href="/client/contact">Contact</Link>
-        <Link href="/client/notre-equipe">Notre equipe</Link>
+        <Link href="/client/notre-equipe">Notre équipe</Link>
       </footer>
     </main>
   );

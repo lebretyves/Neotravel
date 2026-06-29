@@ -1,4 +1,11 @@
-import type { PricingRules } from "../domain/types";
+import type { OptionRates, PricingRules } from "../domain/types";
+
+// Official supplément tariffs (Tableau 3). Kept here so both the in-code defaults and the
+// DB-driven matrix mapping fall back to the same controlled values when none are stored.
+export const DEFAULT_OPTION_RATES: OptionRates = {
+  guideDayRateEur: 80,
+  driverNightRateEur: 120,
+};
 
 export const DEFAULT_PRICING_RULES: PricingRules = {
   version: "mvp-2026-06-24",
@@ -72,6 +79,7 @@ export const DEFAULT_PRICING_RULES: PricingRules = {
       vehicleCode: "COACH_85",
     },
   ],
+  optionRates: DEFAULT_OPTION_RATES,
   marginRate: 0.15,
   vatRate: 0.1,
 };

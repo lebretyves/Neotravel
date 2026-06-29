@@ -134,6 +134,30 @@ describe("calculer_devis", () => {
     expect(quote.price_ttc).toBe(base.price_ttc);
   });
 
+  it("option guide avec jours confirmés : ligne PRICED à 80 €/jour ajoutée au total", () => {
+    const base = expectQuote(calculer_devis(validInput()));
+    const quote = expectQuote(calculer_devis(validInput({ options: { guide: true, guideDays: 2 } })));
+
+    const line = quote.breakdown.options.items?.find((item) => item.code === "guide");
+    expect(line?.pricingStatus).toBe("PRICED");
+    expect(line?.amountEur).toBe(160);
+    expect(line?.note).toMatch(/2 jours × 80/);
+    expect(quote.breakdown.options.totalEur).toBe(160);
+    expect(quote.price_ttc).toBeGreaterThan(base.price_ttc);
+  });
+
+  it("option nuit chauffeur avec nuits confirmées : ligne PRICED à 120 €/nuit ajoutée au total", () => {
+    const base = expectQuote(calculer_devis(validInput()));
+    const quote = expectQuote(calculer_devis(validInput({ options: { driverOvernight: true, driverNights: 1 } })));
+
+    const line = quote.breakdown.options.items?.find((item) => item.code === "driver_overnight");
+    expect(line?.pricingStatus).toBe("PRICED");
+    expect(line?.amountEur).toBe(120);
+    expect(line?.note).toMatch(/1 nuit × 120/);
+    expect(quote.breakdown.options.totalEur).toBe(120);
+    expect(quote.price_ttc).toBeGreaterThan(base.price_ttc);
+  });
+
   it("option péages sans montant contrôlé : placeholder 'inclus/à confirmer', total inchangé", () => {
     const base = expectQuote(calculer_devis(validInput()));
     const quote = expectQuote(calculer_devis(validInput({ options: { tolls: true } })));

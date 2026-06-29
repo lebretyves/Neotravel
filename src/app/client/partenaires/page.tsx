@@ -4,12 +4,12 @@ import styles from "../public-pages.module.css";
 
 const partnerCards = [
   {
-    title: "Selection adaptee",
-    body: "Les partenaires sont proposes selon la zone, la capacite, le type de trajet et les contraintes exprimees."
+    title: "Sélection adaptée",
+    body: "Les partenaires sont proposés selon la zone, la capacité, le type de trajet et les contraintes exprimées."
   },
   {
     title: "Validation humaine",
-    body: "La disponibilite reelle d'un vehicule reste confirmee par un conseiller avant engagement client."
+    body: "La disponibilité réelle d'un véhicule reste confirmée par un conseiller avant engagement client."
   },
   {
     title: "Suivi commercial",
@@ -23,11 +23,11 @@ export default function PartenairesPage() {
       <PublicPageHeader />
       <section className={styles.hero}>
         <p className={styles.kicker} data-i18n-key="Partenaires autocaristes">Partenaires autocaristes</p>
-        <h1 data-i18n-key="Des transporteurs adaptes a votre trajet">
-          Des transporteurs adaptes a votre trajet
+        <h1 data-i18n-key="Des transporteurs adaptés à votre trajet">
+          Des transporteurs adaptés à votre trajet
         </h1>
-        <p data-i18n-key="NeoTravel qualifie le besoin et prepare le dossier. La selection partenaire reste indicative jusqu'a la validation commerciale.">
-          NeoTravel qualifie le besoin et prepare le dossier. La selection partenaire reste indicative jusqu&apos;a la
+        <p data-i18n-key="NeoTravel qualifie le besoin et prépare le dossier. La sélection partenaire reste indicative jusqu'à la validation commerciale.">
+          NeoTravel qualifie le besoin et prépare le dossier. La sélection partenaire reste indicative jusqu&apos;à la
           validation commerciale.
         </p>
       </section>
@@ -52,7 +52,7 @@ export default function PartenairesPage() {
           partenaire contribue à offrir une expérience de mobilité plus fluide, plus sûre et mieux coordonnée.
         </p>
         <Link className={styles.button} href="/client/demande">
-          Demarrer une demande
+          Démarrer une demande
         </Link>
       </section>
       <PublicPageFooter />

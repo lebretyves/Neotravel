@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { listAuditLogs } from "@/shared/lib/data";
 import type { AuditLog } from "@/shared/types/audit-log";
 
 type AuditFilters = {
@@ -10,24 +10,9 @@ type AuditFilters = {
 };
 
 export async function getAuditLogs(filters: AuditFilters = {}): Promise<AuditLog[]> {
-  const supabase = createServerSupabaseClient();
-  const { data, error } = await supabase
-    .from("audit_logs")
-    .select("id, entity_type, entity_id, action, metadata, created_at")
-    .order("created_at", { ascending: false });
+  const logs = await listAuditLogs().catch(() => []);
 
-  if (error) throw new Error(`Unable to load audit logs: ${error.message}`);
-
-  return (data ?? [])
-    .map((log) => ({
-      id: log.id,
-      entityType: log.entity_type as AuditLog["entityType"],
-      entityId: log.entity_id,
-      action: log.action,
-      actor: "system" as const,
-      payload: (log.metadata ?? {}) as Record<string, unknown>,
-      createdAt: log.created_at,
-    }))
+  return logs
     .filter((log) => {
       if (filters.entityType && log.entityType !== filters.entityType) return false;
       if (filters.actor && log.actor !== filters.actor) return false;

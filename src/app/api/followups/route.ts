@@ -9,7 +9,6 @@ const ScheduleSchema = z.object({
   leadId: z.string().min(1),
   quoteId: z.string().min(1).optional(),
   isUrgent: z.boolean().optional(),
-  highValue: z.boolean().optional()
 });
 
 export async function GET() {

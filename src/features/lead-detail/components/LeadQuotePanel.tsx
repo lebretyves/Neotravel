@@ -37,10 +37,19 @@ export function LeadQuotePanel({ lead, quote, followup }: { lead: Lead; quote?: 
 
    <ul className={styles.dataList}>
     <li>
+     Type client <strong>{lead.clientType ?? "À confirmer"}</strong>
+    </li>
+    <li>
+     Contact <strong>{lead.contactName ?? "À confirmer"}</strong>
+    </li>
+    <li>
      Organisation <strong>{lead.organization ?? "À confirmer"}</strong>
     </li>
     <li>
      Email <strong>{lead.email ?? "À confirmer"}</strong>
+    </li>
+    <li>
+     Telephone <strong>{lead.phone ?? "À confirmer"}</strong>
     </li>
     <li>
      Départ <strong>{lead.departureCity ?? "À confirmer"}</strong>

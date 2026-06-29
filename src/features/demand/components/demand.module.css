@@ -428,6 +428,62 @@
   padding: 24px;
 }
 
+.collapsiblePanel {
+  gap: 0;
+  padding: 0;
+}
+
+.collapsibleSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 24px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.collapsibleSummary::-webkit-details-marker {
+  display: none;
+}
+
+.collapsibleSummary::after {
+  display: grid;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 999px;
+  color: #123885;
+  background: #e8f1ff;
+  font-size: 18px;
+  font-weight: 900;
+  content: "+";
+}
+
+.collapsiblePanel[open] .collapsibleSummary::after {
+  content: "−";
+}
+
+.collapsibleSummary span {
+  color: #0d2040;
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.12;
+}
+
+.collapsibleSummary small {
+  margin-left: auto;
+  color: #637188;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: right;
+}
+
+.collapsiblePanel .manualForm {
+  margin: 0 24px 24px;
+}
+
 .sidePanelHeader {
   display: grid;
   gap: 10px;
@@ -655,6 +711,9 @@
 
 .routePreview {
   display: grid;
+  order: -1;
+  position: sticky;
+  top: 18px;
   gap: 18px;
   padding: 24px;
 }
@@ -845,6 +904,10 @@
   .layout {
     grid-template-columns: 1fr;
   }
+
+  .routePreview {
+    position: static;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1020,4 +1083,42 @@
   font-size: 12px;
   font-weight: 600;
   line-height: 1.4;
+}
+
+/* --- Manually confirmed option quantities (guide days / driver nights) --- */
+.optionQtyRow {
+  display: grid;
+  grid-template-columns: 108px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.optionQtyRow span {
+  font-size: 11px;
+  color: #637188;
+  font-weight: 700;
+}
+
+.optionQtyRow input {
+  height: 32px;
+  border: 1px solid #d9e2ed;
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 12px;
+  background: #f8fafd;
+  color: #17202e;
+  outline: none;
+}
+
+.optionQtyRow input:focus {
+  border-color: #123885;
+  background: #fff;
+}
+
+.optionQtyRow small {
+  color: #0b7a4b;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
 }

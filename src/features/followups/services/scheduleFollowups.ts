@@ -9,7 +9,6 @@ export type ScheduleFollowupsInput = {
   quoteId?: string;
   quoteStatus?: "QUOTE_SENT";
   isUrgent?: boolean;
-  highValue?: boolean;
   now?: string | Date;
 };
 
@@ -18,15 +17,19 @@ export function getFollowupDelays(input: Pick<ScheduleFollowupsInput, "isUrgent"
     return [{ label: "DEMO_FAST_FOLLOWUP", delayMs: 2 * MINUTE_MS }];
   }
 
+  if (input.isUrgent) {
+    return [{ label: "URGENT_J2", delayMs: 2 * DAY_MS }];
+  }
+
   return [
-    { label: input.isUrgent ? "URGENT_J2" : "STANDARD_J2", delayMs: 2 * DAY_MS },
+    { label: "STANDARD_J3", delayMs: 3 * DAY_MS },
     { label: "STANDARD_J7", delayMs: 7 * DAY_MS }
   ];
 }
 
-export function resolvePostFollowupOutcome(input: { sentFollowupsWithoutResponse: number; highValue?: boolean }) {
+export function resolvePostFollowupOutcome(input: { sentFollowupsWithoutResponse: number }) {
   if (input.sentFollowupsWithoutResponse < 2) return "PENDING";
-  return input.highValue ? "HUMAN_REVIEW" : "CLOSED";
+  return "CLOSED";
 }
 
 export async function scheduleFollowups(input: ScheduleFollowupsInput) {
@@ -51,7 +54,6 @@ export async function scheduleFollowups(input: ScheduleFollowupsInput) {
         ruleSet: process.env.DEMO_FAST_FOLLOWUP === "true" ? "demo_fast" : input.isUrgent ? "urgent" : "standard",
         nextOutcomeAfterTwoNoResponse: resolvePostFollowupOutcome({
           sentFollowupsWithoutResponse: 2,
-          highValue: input.highValue
         }),
         followups: existing!.map((followup) => ({
           id: followup.id,
@@ -116,7 +118,6 @@ export async function scheduleFollowups(input: ScheduleFollowupsInput) {
     ruleSet: process.env.DEMO_FAST_FOLLOWUP === "true" ? "demo_fast" : input.isUrgent ? "urgent" : "standard",
     nextOutcomeAfterTwoNoResponse: resolvePostFollowupOutcome({
       sentFollowupsWithoutResponse: 2,
-      highValue: input.highValue
     }),
     followups
   };

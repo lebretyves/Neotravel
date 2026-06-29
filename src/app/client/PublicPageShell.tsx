@@ -14,7 +14,7 @@ export function PublicPageHeader() {
         <nav className={styles.nav} aria-label="Navigation publique">
           <Link href="/client/partenaires">Partenaires</Link>
           <Link href="/client/contact">Contact</Link>
-          <Link href="/client/notre-equipe">Notre equipe</Link>
+          <Link href="/client/notre-equipe">Notre équipe</Link>
         </nav>
         <LanguageSelector />
         <AccessibilityWidget />
@@ -26,10 +26,10 @@ export function PublicPageHeader() {
 export function PublicPageFooter() {
   return (
     <footer className={styles.footer}>
-      <Link href="/client/mentions-legales">Mentions legales</Link>
-      <Link href="/client/confidentialite">Confidentialite</Link>
+      <Link href="/client/mentions-legales">Mentions légales</Link>
+      <Link href="/client/confidentialite">Confidentialité</Link>
       <Link href="/client/contact">Contact</Link>
-      <Link href="/client/notre-equipe">Notre equipe</Link>
+      <Link href="/client/notre-equipe">Notre équipe</Link>
     </footer>
   );
 }

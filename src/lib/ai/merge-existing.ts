@@ -4,6 +4,12 @@ import type { LeadRecord } from "../leads/lead-service";
 /** Rebuild a LeadQualification from the nullable persisted lead fields. */
 export function buildExistingQualification(existing: LeadRecord): LeadQualification {
   return {
+    name: existing.name ?? existing.contact_name ?? undefined,
+    contact_name: existing.contact_name ?? existing.name ?? undefined,
+    client_type: existing.client_type ?? undefined,
+    organization: existing.organization ?? undefined,
+    email: existing.email ?? undefined,
+    phone: existing.phone ?? undefined,
     departure_city: existing.departure_city ?? undefined,
     arrival_city: existing.arrival_city ?? undefined,
     departure_date: existing.departure_date ?? undefined,

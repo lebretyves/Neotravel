@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { getLeadCommercialAction, leadDisplayName, leadRouteLabel } from "@/features/dashboard/services/leadPipelinePresentation";
 import type { Followup } from "@/shared/types/followup";
 import type { Lead } from "@/shared/types/lead";
@@ -13,6 +13,10 @@ export function LeadHeader({ lead, quote, followup }: { lead: Lead; quote?: Quot
  return (
   <header className={styles.header}>
    <div>
+    <Link className={styles.secondary} href="/dashboard/demandes">
+     <ArrowLeft aria-hidden="true" size={15} />
+     Retour aux demandes
+    </Link>
     <p className={styles.eyebrow}>Parcours commercial</p>
     <h1>{leadDisplayName(lead)}</h1>
     <p>{leadRouteLabel(lead)}</p>

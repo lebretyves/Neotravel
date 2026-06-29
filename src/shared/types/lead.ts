@@ -17,14 +17,19 @@ export type TripType = "one_way" | "round_trip";
 
 export type DemandDraft = {
   rawMessage?: string;
+  clientType?: string | null;
+  contactName?: string | null;
   organization: string | null;
   email: string | null;
+  phone?: string | null;
   departureCity: string | null;
   arrivalCity: string | null;
   departureDate: string | null;
   returnDate: string | null;
   passengerCount: number | null;
   tripType: TripType | null;
+  hasIntermediateStop?: boolean;
+  intermediateStops?: string[];
   options: string[];
 };
 

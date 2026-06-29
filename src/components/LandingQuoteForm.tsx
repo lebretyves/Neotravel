@@ -12,21 +12,21 @@ export function LandingQuoteForm() {
   }
 
   return (
-    <form className={styles.quoteCard} aria-label="Definissez votre projet" onSubmit={handleSubmit}>
+    <form className={styles.quoteCard} aria-label="Définissez votre projet" onSubmit={handleSubmit}>
       <div className={styles.quoteHeader}>
         <div>
           <p>Assistant NeoTravel</p>
-          <h2>Definissez votre projet</h2>
+          <h2>Définissez votre projet</h2>
         </div>
       </div>
 
       <p className={styles.aiAssistText}>
-        Notre agent IA vous guide pas a pas dans votre projet afin de qualifier votre besoin et preparer les bonnes
+        Notre agent IA vous guide pas à pas dans votre projet afin de qualifier votre besoin et préparer les bonnes
         informations avant le devis.
       </p>
 
       <button className={styles.submitButton} type="submit">
-        Demarrer votre projet
+        Démarrer votre projet
       </button>
     </form>
   );

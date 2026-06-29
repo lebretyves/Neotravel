@@ -11,12 +11,20 @@ import { buildQualificationResponse } from "../../../lib/ai/qualification-respon
 import { generateAssistantReply, type ReplyTurn } from "../../../lib/ai/generate-reply";
 import { extractTurnFacts } from "../../../lib/ai/extract-turn-facts";
 import { detectIntermediateStops } from "../../../lib/ai/detect-intermediate-stops";
-import { detectOptions } from "../../../lib/ai/detect-options";
+import { detectOptions, detectOptionRemovals } from "../../../lib/ai/detect-options";
 import { canonicalizeCity } from "../../../lib/ai/canonicalize-city";
 import { validateLead } from "../../../lib/ai/validate-lead";
 import { getChatModel } from "../../../lib/ai/provider";
 import { sanitizeExtractionDelta } from "../../../lib/ai/sanitize-extraction-delta";
 import { sendLeadStatusEmail } from "../../../features/emails/services/customerEmailService";
+import {
+  CHAT_API_MESSAGES,
+  localizedHumanReviewMessage,
+  localizedQualifiedFallback,
+  localizedQualifiedSummary,
+  parseChatLanguage,
+  type ChatLanguage,
+} from "../../../lib/ai/chat-locale";
 
 export const runtime = "nodejs";
 const DEFAULT_QUALIFICATION_TIMEOUT_MS = 30_000;
@@ -26,6 +34,9 @@ export async function POST(request: Request): Promise<Response> {
   const startedAt = Date.now();
   try {
     const body = await request.json().catch(() => null);
+    const language = parseChatLanguage(
+      typeof body === "object" && body !== null ? (body as Record<string, unknown>).language : undefined,
+    );
     const messages = normalizeMessages(body);
     const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
     const latestUserText = getMessageText(latestUserMessage?.content);
@@ -53,7 +64,7 @@ export async function POST(request: Request): Promise<Response> {
       return chatJson(
         {
           status: "ERROR",
-          message: "Votre message est vide. Ajoutez quelques informations sur votre trajet.",
+          message: CHAT_API_MESSAGES[language].emptyMessage,
         },
         { status: 400 },
       );
@@ -65,8 +76,7 @@ export async function POST(request: Request): Promise<Response> {
       return chatJson(
         {
           status: "HUMAN_REVIEW",
-          message:
-            "Les règles tarifaires ne peuvent pas être modifiées depuis la conversation. Un conseiller peut vérifier votre demande.",
+          message: CHAT_API_MESSAGES[language].promptInjection,
           reviewReason: "PROMPT_INJECTION_ATTEMPT",
         },
         { status: 200 },
@@ -81,7 +91,7 @@ export async function POST(request: Request): Promise<Response> {
       return chatJson(
         {
           status: "ERROR",
-          message: "Le service de conversation est momentanément indisponible. Réessayez dans un instant.",
+          message: CHAT_API_MESSAGES[language].serviceUnavailable,
         },
         { status: 503 },
       );
@@ -145,7 +155,7 @@ RÈGLES ABSOLUES :
 3. Message sans information de transport concrète → retourne {}.
 
 Retourne UNIQUEMENT un objet JSON valide (aucun markdown, aucun texte autour), avec seulement les champs présents dans ce message parmi :
-{"name":string,"organization":string,"email":string,"departure_city":string,"arrival_city":string,"departure_date":"YYYY-MM-DD","return_date":"YYYY-MM-DD","passenger_count":number,"trip_type":"one_way"|"round_trip"}
+{"name":string,"contact_name":string,"client_type":string,"organization":string,"email":string,"phone":string,"departure_city":string,"arrival_city":string,"departure_date":"YYYY-MM-DD","return_date":"YYYY-MM-DD","passenger_count":number,"trip_type":"one_way"|"round_trip"}
 
 Message : ${latestUserText}`,
         temperature: 0.1,
@@ -180,7 +190,14 @@ Message : ${latestUserText}`,
     // Options are detected deterministically and unioned with what's already on the lead so
     // earlier-turn options are never dropped. The LLM never touches options or their price.
     const detectedOptions = detectOptions(latestUserText);
-    const mergedOptions = { ...(existingQualification.options ?? {}), ...detectedOptions };
+    const removedOptions = detectOptionRemovals(latestUserText);
+    const mergedOptions: Record<string, unknown> = { ...(existingQualification.options ?? {}), ...detectedOptions };
+    // Explicit removals win over adds and clear any confirmed quantity for that option.
+    for (const code of removedOptions) {
+      delete mergedOptions[code];
+      if (code === "guide") delete mergedOptions.guideDays;
+      if (code === "driver_overnight") delete mergedOptions.driverNights;
+    }
     const extractedDelta = sanitizeExtractionDelta(
       rawExtractedDelta,
       deterministicFacts,
@@ -190,7 +207,9 @@ Message : ${latestUserText}`,
       ...extractedDelta,
       ...deterministicFacts,
       ...deterministicStops,
-      ...(Object.keys(mergedOptions).length > 0 ? { options: mergedOptions } : {}),
+      // Include options even when emptied by a removal, so mergeLead overwrites the stored
+      // value instead of keeping the old one (an absent key would be treated as "no change").
+      ...(Object.keys(mergedOptions).length > 0 || removedOptions.length > 0 ? { options: mergedOptions } : {}),
       departure_city: extractedDelta.departure_city ?? deterministicFacts.departure_city,
       arrival_city: extractedDelta.arrival_city ?? deterministicFacts.arrival_city,
     };
@@ -260,6 +279,9 @@ Message : ${latestUserText}`,
     );
 
     const extractedFields: ExtractedFields = {
+      clientType: lead.client_type ?? null,
+      contactName: lead.contact_name ?? lead.name ?? null,
+      organization: lead.organization ?? null,
       departureCity: lead.departure_city ?? null,
       arrivalCity: lead.arrival_city ?? null,
       departureDate: lead.departure_date ?? null,
@@ -267,7 +289,9 @@ Message : ${latestUserText}`,
       passengerCount: lead.passenger_count ?? null,
       tripType: (lead.trip_type ?? null) as "one_way" | "round_trip" | null,
       email: lead.email ?? null,
+      phone: lead.phone ?? null,
       options: detectedOptionCodes(lead.options),
+      removedOptions,
       multiDestination: Boolean(lead.has_intermediate_stop),
       stops: lead.intermediate_stops ?? [],
     };
@@ -286,7 +310,7 @@ Message : ${latestUserText}`,
       );
       return chatJson({
         status: "HUMAN_REVIEW",
-        message: formatHumanReviewMessage(reason),
+        message: formatHumanReviewMessage(reason, language),
         leadId: leadResult.leadId,
         reviewReason: reason,
         extractedFields,
@@ -310,7 +334,7 @@ Message : ${latestUserText}`,
       );
       return chatJson({
         status: "HUMAN_REVIEW",
-        message: formatHumanReviewMessage("PAX_OVER_85"),
+        message: formatHumanReviewMessage("PAX_OVER_85", language),
         leadId: leadResult.leadId,
         reviewReason: "PAX_OVER_85",
         extractedFields,
@@ -334,10 +358,11 @@ Message : ${latestUserText}`,
           warnings,
           conversation: replyConversation,
           lastTurnAddedUsableInfo,
+          language,
         },
         {
           generate: generateReply,
-          fallback: buildQualificationResponse(warnings, missing.missing_fields),
+          fallback: buildQualificationResponse(warnings, missing.missing_fields, language),
         },
       );
 
@@ -362,18 +387,12 @@ Message : ${latestUserText}`,
       });
     }
 
-    // All required fields collected — return QUALIFIED so the front-end enables the quote button.
-    // Quote calculation is intentionally left to the dedicated /api/quotes route (triggered by the user).
-    const qualifiedSummary = [
-      lead.departure_city && lead.arrival_city ? `${lead.departure_city} → ${lead.arrival_city}` : null,
-      lead.departure_date ? `le ${lead.departure_date}` : null,
-      lead.passenger_count ? `${lead.passenger_count} passagers` : null,
-      lead.trip_type === "round_trip" ? "aller-retour" : lead.trip_type === "one_way" ? "aller simple" : null,
-    ]
-      .filter(Boolean)
-      .join(", ");
+    // All required fields collected: the lead is QUALIFIED. Quote generation is NOT triggered
+    // here — it is an explicit user action (the "Recevoir mon devis" button on the form, which
+    // goes through /api/leads/sync then /api/quotes). The chat only confirms qualification.
+    const qualifiedSummary = localizedQualifiedSummary(lead, language);
 
-    const qualifiedFallback = `Parfait, j'ai toutes les informations pour votre trajet (${qualifiedSummary}). Cliquez sur "Recevoir mon devis" pour obtenir votre estimation.`;
+    const qualifiedFallback = localizedQualifiedFallback(qualifiedSummary, language);
     const qualifiedMessage = await generateAssistantReply(
       {
         status: "QUALIFIED",
@@ -382,6 +401,7 @@ Message : ${latestUserText}`,
         warnings,
         conversation: replyConversation,
         lastTurnAddedUsableInfo,
+        language,
       },
       { generate: generateReply, fallback: qualifiedFallback },
     );
@@ -398,6 +418,7 @@ Message : ${latestUserText}`,
       message: qualifiedMessage,
       leadId: leadResult.leadId,
       extractedFields,
+      warnings,
     });
   } catch (error) {
     const isDirectApiError = error instanceof APICallError;
@@ -500,7 +521,6 @@ function detectedOptionCodes(options: Record<string, unknown> | undefined | null
   const codes: string[] = [];
   if (options.guide || options.guideDays) codes.push("guide");
   if (options.driverOvernight || options.driver_overnight || options.driverNights) codes.push("driver_overnight");
-  if (options.tolls || options.tollsIncluded || options.tollPackageEur) codes.push("tolls");
   return codes;
 }
 
@@ -603,26 +623,8 @@ function logAgentEvent(
   });
 }
 
-const HUMAN_REVIEW_MESSAGES: Record<string, string> = {
-  PAX_OVER_85:
-    "Votre demande dépasse notre capacité standard (85 passagers). Notre équipe vous contactera pour une solution adaptée.",
-  DEPARTURE_IN_PAST:
-    "La date de départ indiquée est déjà passée. Merci de nous préciser une date à venir.",
-  UNKNOWN_ROUTE_NO_DISTANCE:
-    "Cet itinéraire n'est pas encore référencé dans notre base. Notre équipe calculera le tarif manuellement et vous recontactera.",
-  INVALID_DATE:
-    "La date de départ fournie est invalide. Merci de la vérifier.",
-  PAX_ZERO_OR_NEGATIVE:
-    "Le nombre de passagers indiqué n'est pas valide. Merci de le préciser.",
-  INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE:
-    "Votre trajet comporte un arrêt intermédiaire. Notre équipe doit vérifier l'itinéraire avant de préparer le devis.",
-};
-
-function formatHumanReviewMessage(reason: string): string {
-  return (
-    HUMAN_REVIEW_MESSAGES[reason] ??
-    "Votre demande nécessite une vérification par notre équipe. Nous vous contacterons rapidement."
-  );
+function formatHumanReviewMessage(reason: string, language: ChatLanguage): string {
+  return localizedHumanReviewMessage(reason, language);
 }
 
 function extractLeadIdFromBody(body: unknown): string | undefined {
@@ -635,8 +637,11 @@ function extractLeadIdFromBody(body: unknown): string | undefined {
 
 const USABLE_LEAD_FIELDS = [
   "name",
+  "contact_name",
+  "client_type",
   "organization",
   "email",
+  "phone",
   "departure_city",
   "arrival_city",
   "departure_date",

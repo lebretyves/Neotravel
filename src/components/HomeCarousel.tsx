@@ -22,12 +22,12 @@ const slides = [
   },
   {
     title: "Sorties et loisirs",
-    subtitle: "Groupes, parcs et sejours",
+    subtitle: "Groupes, parcs et séjours",
     image: "/images/landing-carousel/car-paris-disney.webp"
   },
   {
     title: "Confort a bord",
-    subtitle: "Interieur autocar premium",
+    subtitle: "Intérieur autocar premium",
     image: "/images/landing-carousel/bus-interieur-premium.webp"
   }
 ];

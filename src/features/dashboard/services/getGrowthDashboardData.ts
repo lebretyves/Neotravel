@@ -793,8 +793,8 @@ export async function getGrowthDashboardData(filters: GrowthFilters = {}): Promi
    message: `${leadClient(leadById.get(followup.leadId))} a une relance prevue depassee.`,
    targetType: "followup" as const,
    targetId: followup.id,
-   href: `/dashboard/demandes/${followup.leadId}`,
-   actionLabel: "Voir le lead"
+   href: `/dashboard/relances/${followup.id}`,
+   actionLabel: "Voir la relance"
   })),
   ...sentQuotes
    .filter((quote) => {
@@ -902,7 +902,7 @@ export async function getGrowthDashboardData(filters: GrowthFilters = {}): Promi
      type: leadById.get(followup.leadId) && isUrgentLead(leadById.get(followup.leadId) as Lead) ? "J+2 urgente" : "Standard",
      dueAt: followup.dueAt,
      status: followup.status,
-     href: `/dashboard/demandes/${followup.leadId}`
+     href: `/dashboard/relances/${followup.id}`
     };
    })
   },

@@ -32,9 +32,11 @@ describe("buildReplyPrompt", () => {
     expect(prompt).toContain('UNIQUEMENT la première information manquante : "ville d\'arrivée"');
   });
 
-  it("invites to the quote button when QUALIFIED", () => {
+  it("invites the user to click the quote button when QUALIFIED (no auto-generation)", () => {
     const prompt = buildReplyPrompt({ ...baseCtx, status: "QUALIFIED", missingFields: [] });
     expect(prompt).toContain("Recevoir mon devis");
+    expect(prompt).toContain("n'est PAS encore genere");
+    expect(prompt).not.toContain("se prepare automatiquement");
   });
 
   it("instructs the model from the generic last-turn signal", () => {
@@ -74,9 +76,9 @@ describe("generateAssistantReply", () => {
     const generate = vi.fn().mockRejectedValue(new Error("down"));
     const reply = await generateAssistantReply(
       { ...baseCtx, status: "QUALIFIED", missingFields: [] },
-      { generate, fallback: "Demande prête, cliquez sur Recevoir mon devis." },
+      { generate, fallback: "Demande prete, le devis se prepare automatiquement." },
     );
-    expect(reply).toBe("Demande prête, cliquez sur Recevoir mon devis.");
+    expect(reply).toBe("Demande prete, le devis se prepare automatiquement.");
   });
 
   it("uses deterministic wording when the last turn added no usable date", async () => {
@@ -137,7 +139,9 @@ describe("generateAssistantReply", () => {
       { generate },
     );
 
-    expect(reply).toBe("Je n’ai pas encore la ville de départ. Quelle est votre ville de départ ?");
+    expect(reply).toBe(
+      "Je n’ai pas encore la ville de départ. Pour commencer, quelle est votre ville de départ ?",
+    );
     expect(generate).not.toHaveBeenCalled();
   });
 

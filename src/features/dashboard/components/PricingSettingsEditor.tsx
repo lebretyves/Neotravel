@@ -1,168 +1,385 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { RotateCcw, Save } from "lucide-react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import type { PricingRules } from "@/lib/domain/types";
+import type { PricingStorageMode } from "@/lib/pricing/pricing-matrix-store";
+import { resetPricingMatrixAction, savePricingMatrixAction } from "@/features/pricing/actions";
 import styles from "./dashboard.module.css";
 
-type PricingRule = {
- key: string;
- ruleType: string;
- label: string;
- value: unknown;
- unit: string;
- active: boolean;
- version: number;
-};
+type Feedback = { tone: "ok" | "error"; text: string } | null;
 
-type StoredPricingOverrides = {
- rules?: Record<string, string>;
-};
-
-const STORAGE_KEY = "neotravel.dashboard.pricingOverrides.v1";
-
-function ruleId(rule: PricingRule) {
- return `${rule.key}__v${rule.version}`;
+function cloneRules(rules: PricingRules): PricingRules {
+  return structuredClone(rules);
 }
 
-function displayRuleValue(rule: PricingRule) {
- if (typeof rule.value === "number" && rule.unit === "rate") return String(Math.round(rule.value * 100));
- return typeof rule.value === "number" || typeof rule.value === "string" ? String(rule.value) : JSON.stringify(rule.value);
+function rateToPercent(rate: number) {
+  return String(Math.round(rate * 1000) / 10);
 }
 
-function unitLabel(unit: string) {
- if (unit === "rate") return "%";
- if (unit === "eur") return "EUR";
- if (unit === "eur_per_day") return "EUR / jour";
- if (unit === "eur_per_night") return "EUR / nuit";
- return unit;
+function percentToRate(value: string) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return parsed / 100;
+}
+
+function storageHint(mode: PricingStorageMode) {
+  if (mode === "supabase") return "Persistance : base Supabase (pricing_matrices).";
+  if (mode === "file") return "Persistance : fichier local pricing-matrix.json.";
+  return "Valeurs par défaut du code — enregistrez pour créer un fichier local.";
 }
 
 export function PricingSettingsEditor({
- pricingRules
+  initialRules,
+  storageMode
 }: {
- pricingRules: PricingRule[];
+  initialRules: PricingRules;
+  storageMode: PricingStorageMode;
 }) {
- const defaultRules = useMemo(
-  () => Object.fromEntries(pricingRules.map((rule) => [ruleId(rule), displayRuleValue(rule)])),
-  [pricingRules]
- );
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const defaults = useMemo(() => cloneRules(initialRules), [initialRules]);
+  const [rules, setRules] = useState<PricingRules>(() => cloneRules(initialRules));
+  const [feedback, setFeedback] = useState<Feedback>(null);
 
- const [ruleValues, setRuleValues] = useState(defaultRules);
- const [hydrated, setHydrated] = useState(false);
+  useEffect(() => {
+    setRules(cloneRules(initialRules));
+  }, [initialRules]);
 
- useEffect(() => {
-  try {
-   const raw = window.localStorage.getItem(STORAGE_KEY);
-   const stored = raw ? (JSON.parse(raw) as StoredPricingOverrides) : {};
-   setRuleValues({ ...defaultRules, ...stored.rules });
-  } catch {
-   setRuleValues(defaultRules);
-  } finally {
-   setHydrated(true);
-  }
- }, [defaultRules]);
+  const changed = JSON.stringify(rules) !== JSON.stringify(defaults);
 
- useEffect(() => {
-  if (!hydrated) return;
-
-  const rules = Object.fromEntries(Object.entries(ruleValues).filter(([key, value]) => value !== defaultRules[key]));
-
-  if (Object.keys(rules).length === 0) {
-   window.localStorage.removeItem(STORAGE_KEY);
-   return;
+  function updateGridRow(index: number, field: "distanceKm" | "priceEur", value: string) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return;
+    setRules((prev) => {
+      const grid = [...prev.forfaitDistanceGrid];
+      grid[index] = { ...grid[index], [field]: parsed };
+      return { ...prev, forfaitDistanceGrid: grid };
+    });
   }
 
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ rules }));
- }, [defaultRules, hydrated, ruleValues]);
+  function updateSeason(
+    key: "low" | "medium" | "high" | "veryHigh",
+    coefficientPercent: string
+  ) {
+    setRules((prev) => ({
+      ...prev,
+      seasonality: {
+        ...prev.seasonality,
+        [key]: { ...prev.seasonality[key], coefficient: percentToRate(coefficientPercent) }
+      }
+    }));
+  }
 
- const changedRules = pricingRules.reduce((count, rule) => {
-  const id = ruleId(rule);
-  const value = ruleValues[id] ?? defaultRules[id];
-  return value !== defaultRules[id] ? count + 1 : count;
- }, 0);
+  function updateLeadTime(index: number, coefficientPercent: string) {
+    setRules((prev) => {
+      const leadTime = [...prev.leadTime];
+      leadTime[index] = { ...leadTime[index], coefficient: percentToRate(coefficientPercent) };
+      return { ...prev, leadTime };
+    });
+  }
 
- function resetAll() {
-  setRuleValues(defaultRules);
- }
+  function updateCapacity(index: number, coefficientPercent: string) {
+    setRules((prev) => {
+      const capacity = [...prev.capacity];
+      capacity[index] = { ...capacity[index], coefficient: percentToRate(coefficientPercent) };
+      return { ...prev, capacity };
+    });
+  }
 
- return (
-  <section className={styles.pricingEditor} aria-label="Edition des tarifs" data-no-translate>
-   <div className={styles.pricingToolbar}>
-    <div>
-     <strong>{changedRules} tarif{changedRules > 1 ? "s" : ""} modifie{changedRules > 1 ? "s" : ""}</strong>
-     <span>Les valeurs par defaut sont celles deja presentes.</span>
-    </div>
-    <button type="button" className={styles.secondary} onClick={resetAll} disabled={changedRules === 0}>
-     <RotateCcw size={15} aria-hidden="true" />
-     Tout remettre a zero
-    </button>
-   </div>
+  function save() {
+    startTransition(async () => {
+      const result = await savePricingMatrixAction(rules);
+      setFeedback(result.ok ? { tone: "ok", text: result.message ?? "" } : { tone: "error", text: result.error ?? "" });
+      if (result.ok) router.refresh();
+    });
+  }
 
-   <section className={styles.pricingSection}>
-     <div className={styles.panelHeader}>
-      <div>
-       <h2>Regles tarifaires</h2>
-       <p>{pricingRules.length} valeurs modifiables avec retour a la valeur par defaut.</p>
-      </div>
-     </div>
-     <div className={styles.pricingTable}>
-      <div className={styles.pricingHead}>
-       <span>Regle</span>
-       <span>Tarif</span>
-       <span>Defaut</span>
-       <span>Etat</span>
-      </div>
-      {pricingRules.map((rule) => {
-       const id = ruleId(rule);
-       const value = ruleValues[id] ?? defaultRules[id];
-       const changed = value !== defaultRules[id];
+  function resetAll() {
+    startTransition(async () => {
+      const result = await resetPricingMatrixAction();
+      if (result.ok) {
+        setFeedback({ tone: "ok", text: result.message ?? "" });
+        router.refresh();
+      } else {
+        setFeedback({ tone: "error", text: result.error ?? "" });
+      }
+    });
+  }
 
-       return (
-        <div className={styles.pricingRow} key={id} data-changed={changed ? "true" : undefined}>
-         <span className={styles.pricingName}>
-          <strong>{rule.label}</strong>
-          <small>
-           {rule.ruleType} - v{rule.version}
-          </small>
-         </span>
-         <label className={styles.pricingInputGroup}>
-          <input
-           className={styles.pricingInput}
-           type="number"
-           min="0"
-           step={rule.unit === "rate" ? "0.1" : "1"}
-           value={value}
-           onChange={(event) => {
-            const nextValue = event.currentTarget.value;
-            setRuleValues((prev) => ({ ...prev, [id]: nextValue }));
-           }}
-           onInput={(event) => {
-            const nextValue = event.currentTarget.value;
-            setRuleValues((prev) => ({ ...prev, [id]: nextValue }));
-           }}
-          />
-          <span>{unitLabel(rule.unit)}</span>
-         </label>
-         <span className={styles.pricingDefault}>
-          {defaultRules[id]} {unitLabel(rule.unit)}
-         </span>
-         <span className={styles.pricingState}>
-          <span>{changed ? "Modifie" : "Defaut"}</span>
-          <button
-           type="button"
-           className={styles.pricingResetButton}
-           onClick={() => setRuleValues((prev) => ({ ...prev, [id]: defaultRules[id] }))}
-           disabled={!changed}
-           aria-label={`Remettre ${rule.label} a zero`}
-          >
-           <RotateCcw size={14} aria-hidden="true" />
-          </button>
-         </span>
+  function discardLocal() {
+    setRules(cloneRules(defaults));
+    setFeedback(null);
+  }
+
+  const seasonLabels: Record<"low" | "medium" | "high" | "veryHigh", string> = {
+    low: "Basse saison",
+    medium: "Moyenne saison",
+    high: "Haute saison",
+    veryHigh: "Très haute saison"
+  };
+
+  const leadTimeLabels = ["Prioritaire (≤ 14 j)", "Urgent (15–30 j)", "Normal (31–90 j)", "3 mois et plus"];
+
+  return (
+    <section className={styles.pricingEditor} aria-label="Édition des tarifs" data-no-translate>
+      {feedback ? (
+        <p className={feedback.tone === "ok" ? styles.feedbackOk : styles.feedbackError} role="status">
+          {feedback.text}
+        </p>
+      ) : null}
+
+      <div className={styles.pricingToolbar}>
+        <div>
+          <strong>{changed ? "Modifications non enregistrées" : "Tarifs à jour"}</strong>
+          <span>
+            Version {rules.version} — {storageHint(storageMode)} Les devis passent par calculer_devis(), jamais par
+            l&apos;IA.
+          </span>
         </div>
-       );
-      })}
-     </div>
-   </section>
-  </section>
- );
+        <div className={styles.pricingToolbarActions}>
+          <button type="button" className={styles.secondary} onClick={discardLocal} disabled={!changed || pending}>
+            Annuler
+          </button>
+          <button type="button" className={styles.secondary} onClick={resetAll} disabled={pending}>
+            <RotateCcw size={15} aria-hidden="true" />
+            Réinitialiser défauts
+          </button>
+          <button type="button" className={styles.primary} onClick={save} disabled={!changed || pending}>
+            <Save size={15} aria-hidden="true" />
+            {pending ? "Enregistrement…" : "Enregistrer les tarifs"}
+          </button>
+        </div>
+      </div>
+
+      <section className={styles.pricingSection}>
+        <div className={styles.panelHeader}>
+          <div>
+            <h2>Grille forfaitaire distance</h2>
+            <p>Prix de base selon la distance (aller simple).</p>
+          </div>
+        </div>
+        <div className={styles.pricingTable}>
+          <div className={styles.pricingHead}>
+            <span>Distance max (km)</span>
+            <span>Prix (EUR)</span>
+            <span />
+            <span />
+          </div>
+          {rules.forfaitDistanceGrid.map((row, index) => (
+            <div className={styles.pricingRow} key={`grid-${row.distanceKm}`}>
+              <span className={styles.pricingName}>
+                <strong>Palier {index + 1}</strong>
+                <small>≤ {row.distanceKm} km</small>
+              </span>
+              <label className={styles.pricingInputGroup}>
+                <input
+                  className={styles.pricingInput}
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={row.distanceKm}
+                  onChange={(e) => updateGridRow(index, "distanceKm", e.target.value)}
+                />
+                <span>km</span>
+              </label>
+              <label className={styles.pricingInputGroup}>
+                <input
+                  className={styles.pricingInput}
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={row.priceEur}
+                  onChange={(e) => updateGridRow(index, "priceEur", e.target.value)}
+                />
+                <span>EUR</span>
+              </label>
+              <span />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.pricingSection}>
+        <div className={styles.panelHeader}>
+          <div>
+            <h2>Longue distance</h2>
+            <p>Au-delà du dernier palier de la grille.</p>
+          </div>
+        </div>
+        <div className={styles.pricingTable}>
+          <div className={styles.pricingRow}>
+            <span className={styles.pricingName}>
+              <strong>Tarif kilométrique</strong>
+              <small>Par km et par sens</small>
+            </span>
+            <label className={styles.pricingInputGroup}>
+              <input
+                className={styles.pricingInput}
+                type="number"
+                min="0"
+                step="0.1"
+                value={rules.longDistanceRatePerKmPerLeg}
+                onChange={(e) =>
+                  setRules((prev) => ({
+                    ...prev,
+                    longDistanceRatePerKmPerLeg: Number(e.target.value) || 0
+                  }))
+                }
+              />
+              <span>EUR / km</span>
+            </label>
+            <span />
+            <span />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.pricingSection}>
+        <div className={styles.panelHeader}>
+          <div>
+            <h2>Saisonnalité</h2>
+            <p>Coefficients appliqués selon le mois de départ.</p>
+          </div>
+        </div>
+        <div className={styles.pricingTable}>
+          {(Object.keys(seasonLabels) as Array<keyof typeof seasonLabels>).map((key) => (
+            <div className={styles.pricingRow} key={key}>
+              <span className={styles.pricingName}>
+                <strong>{seasonLabels[key]}</strong>
+                <small>Mois : {rules.seasonality[key].months.join(", ")}</small>
+              </span>
+              <label className={styles.pricingInputGroup}>
+                <input
+                  className={styles.pricingInput}
+                  type="number"
+                  step="0.1"
+                  value={rateToPercent(rules.seasonality[key].coefficient)}
+                  onChange={(e) => updateSeason(key, e.target.value)}
+                />
+                <span>%</span>
+              </label>
+              <span />
+              <span />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.pricingSection}>
+        <div className={styles.panelHeader}>
+          <div>
+            <h2>Délai de réservation</h2>
+            <p>Coefficients selon l&apos;anticipation entre demande et départ.</p>
+          </div>
+        </div>
+        <div className={styles.pricingTable}>
+          {rules.leadTime.map((rule, index) => (
+            <div className={styles.pricingRow} key={rule.code}>
+              <span className={styles.pricingName}>
+                <strong>{leadTimeLabels[index] ?? rule.code}</strong>
+                <small>{rule.code}</small>
+              </span>
+              <label className={styles.pricingInputGroup}>
+                <input
+                  className={styles.pricingInput}
+                  type="number"
+                  step="0.1"
+                  value={rateToPercent(rule.coefficient)}
+                  onChange={(e) => updateLeadTime(index, e.target.value)}
+                />
+                <span>%</span>
+              </label>
+              <span />
+              <span />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.pricingSection}>
+        <div className={styles.panelHeader}>
+          <div>
+            <h2>Capacité véhicule</h2>
+            <p>Coefficients selon le nombre de passagers.</p>
+          </div>
+        </div>
+        <div className={styles.pricingTable}>
+          {rules.capacity.map((rule, index) => (
+            <div className={styles.pricingRow} key={`${rule.vehicleCode}-${index}`}>
+              <span className={styles.pricingName}>
+                <strong>{rule.vehicleCode}</strong>
+                <small>
+                  {rule.minPassengersExclusive != null ? `> ${rule.minPassengersExclusive}` : "≤"}{" "}
+                  {rule.maxPassengersInclusive} pax
+                </small>
+              </span>
+              <label className={styles.pricingInputGroup}>
+                <input
+                  className={styles.pricingInput}
+                  type="number"
+                  step="0.1"
+                  value={rateToPercent(rule.coefficient)}
+                  onChange={(e) => updateCapacity(index, e.target.value)}
+                />
+                <span>%</span>
+              </label>
+              <span />
+              <span />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.pricingSection}>
+        <div className={styles.panelHeader}>
+          <div>
+            <h2>Marge &amp; TVA</h2>
+            <p>Paramètres finaux appliqués au calcul HT / TTC.</p>
+          </div>
+        </div>
+        <div className={styles.pricingTable}>
+          <div className={styles.pricingRow}>
+            <span className={styles.pricingName}>
+              <strong>Marge commerciale</strong>
+            </span>
+            <label className={styles.pricingInputGroup}>
+              <input
+                className={styles.pricingInput}
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={rateToPercent(rules.marginRate)}
+                onChange={(e) => setRules((prev) => ({ ...prev, marginRate: percentToRate(e.target.value) }))}
+              />
+              <span>%</span>
+            </label>
+            <span />
+            <span />
+          </div>
+          <div className={styles.pricingRow}>
+            <span className={styles.pricingName}>
+              <strong>TVA transport</strong>
+            </span>
+            <label className={styles.pricingInputGroup}>
+              <input
+                className={styles.pricingInput}
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={rateToPercent(rules.vatRate)}
+                onChange={(e) => setRules((prev) => ({ ...prev, vatRate: percentToRate(e.target.value) }))}
+              />
+              <span>%</span>
+            </label>
+            <span />
+            <span />
+          </div>
+        </div>
+      </section>
+    </section>
+  );
 }

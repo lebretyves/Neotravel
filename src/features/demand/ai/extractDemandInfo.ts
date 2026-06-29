@@ -42,8 +42,7 @@ function detectTripType(message: string): TripType | null {
 function detectOptions(message: string) {
   return [
     /guide|accompagnateur/i.test(message) ? "guide" : null,
-    /nuit chauffeur/i.test(message) ? "nuit_chauffeur" : null,
-    /p[eé]age/i.test(message) ? "peages" : null
+    /nuit chauffeur/i.test(message) ? "nuit_chauffeur" : null
   ].filter((option): option is string => Boolean(option));
 }
 

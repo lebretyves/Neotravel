@@ -59,6 +59,9 @@ export type QuoteSummary = {
 };
 
 export type ExtractedFields = {
+  clientType: string | null;
+  contactName: string | null;
+  organization: string | null;
   departureCity: string | null;
   arrivalCity: string | null;
   departureDate: string | null;
@@ -66,7 +69,11 @@ export type ExtractedFields = {
   passengerCount: number | null;
   tripType: "one_way" | "round_trip" | null;
   email: string | null;
+  phone: string | null;
   options: string[];
+  // Options removed by the user this turn ("enlève mon guide"). The front clears them from
+  // its selection — a union-only merge could never drop an already-chosen option.
+  removedOptions: string[];
   multiDestination: boolean;
   stops: string[];
 };

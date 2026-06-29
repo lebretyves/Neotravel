@@ -10,6 +10,7 @@ type FollowupRow = {
   channel: "email";
   status: string;
   scheduled_at: string;
+  created_at?: string | null;
 };
 
 // The DB stores lowercase statuses (scheduled/sent/cancelled); the app type and the
@@ -33,9 +34,12 @@ function toFollowup(row: FollowupRow): Followup {
     quoteId: row.quote_id ?? undefined,
     channel: row.channel,
     status: normalizeFollowupStatus(row.status),
-    dueAt: row.scheduled_at
+    dueAt: row.scheduled_at,
+    createdAt: row.created_at ?? null
   };
 }
+
+const followupSelection = "id, lead_id, quote_id, channel, status, scheduled_at, created_at";
 
 export async function createFollowupRecord(input: Parameters<typeof demoStore.createFollowup>[0]) {
   if (shouldUseDemoData()) return demoStore.createFollowup(input);
@@ -50,7 +54,7 @@ export async function createFollowupRecord(input: Parameters<typeof demoStore.cr
       status: input.status ?? "SCHEDULED",
       scheduled_at: input.dueAt
     })
-    .select("id, lead_id, quote_id, channel, status, scheduled_at")
+    .select(followupSelection)
     .single();
 
   if (error) throw error;
@@ -63,9 +67,23 @@ export async function listFollowups() {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("followups")
-    .select("id, lead_id, quote_id, channel, status, scheduled_at")
+    .select(followupSelection)
     .order("scheduled_at", { ascending: true });
 
   if (error) throw error;
   return (data as FollowupRow[]).map(toFollowup);
+}
+
+export async function getFollowupById(id: string) {
+  if (shouldUseDemoData()) return demoStore.listFollowups().find((followup) => followup.id === id) ?? null;
+
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("followups")
+    .select(followupSelection)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data ? toFollowup(data as FollowupRow) : null;
 }

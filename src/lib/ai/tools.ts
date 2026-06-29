@@ -97,6 +97,7 @@ export async function createOrUpdateLead(
     : missing.status;
   const supabase = createServerSupabaseClient();
   const leadPayload = {
+    client_type: lead.client_type ?? null,
     departure_city: lead.departure_city ?? null,
     arrival_city: lead.arrival_city ?? null,
     departure_date: lead.departure_date ?? null,
@@ -129,32 +130,90 @@ export async function createOrUpdateLead(
 
     if (existingClient?.id) {
       clientId = existingClient.id as string;
+      const clientUpdate = compactRecord({
+        name: lead.name ?? lead.contact_name,
+        contact_name: lead.contact_name ?? lead.name,
+        organization: lead.organization,
+        phone: lead.phone,
+      });
+      if (Object.keys(clientUpdate).length > 0) {
+        const { error: updateClientError } = await supabase
+          .from("clients")
+          .update(clientUpdate)
+          .eq("id", clientId);
+
+        if (updateClientError && isMissingColumnError(updateClientError)) {
+          const { error: legacyUpdateError } = await supabase
+            .from("clients")
+            .update(
+              compactRecord({
+                name: lead.name ?? lead.contact_name,
+                organization: lead.organization,
+              }),
+            )
+            .eq("id", clientId);
+
+          if (legacyUpdateError) {
+            throw new Error(`Unable to update client: ${legacyUpdateError.message}`);
+          }
+        } else if (updateClientError) {
+          throw new Error(`Unable to update client: ${updateClientError.message}`);
+        }
+      }
     } else {
       const { data: client, error: clientError } = await supabase
         .from("clients")
         .insert({
-          name: lead.name ?? null,
+          name: lead.name ?? lead.contact_name ?? null,
+          contact_name: lead.contact_name ?? lead.name ?? null,
           organization: lead.organization ?? null,
           email: lead.email,
+          phone: lead.phone ?? null,
         })
         .select("id")
         .single();
 
-      if (clientError) {
-        throw new Error(`Unable to create client: ${clientError.message}`);
-      }
+      if (clientError && isMissingColumnError(clientError)) {
+        const { data: legacyClient, error: legacyClientError } = await supabase
+          .from("clients")
+          .insert({
+            name: lead.name ?? lead.contact_name ?? null,
+            organization: lead.organization ?? null,
+            email: lead.email,
+          })
+          .select("id")
+          .single();
 
-      clientId = client.id as string;
+        if (legacyClientError) {
+          throw new Error(`Unable to create client: ${legacyClientError.message}`);
+        }
+
+        clientId = legacyClient.id as string;
+      } else if (clientError) {
+        throw new Error(`Unable to create client: ${clientError.message}`);
+      } else {
+        clientId = client.id as string;
+      }
     }
   }
 
   if (input.leadId) {
+    const updatePayload = { ...leadPayload, ...(lead.email ? { client_id: clientId } : {}) };
     const { error } = await supabase
       .from("leads")
-      .update({ ...leadPayload, ...(lead.email ? { client_id: clientId } : {}) })
+      .update(updatePayload)
       .eq("id", input.leadId);
 
-    if (error) {
+    if (error && isMissingColumnError(error)) {
+      const { error: legacyError } = await supabase
+        .from("leads")
+        .update(toLegacyLeadPayload(updatePayload))
+        .eq("id", input.leadId);
+
+      if (legacyError) {
+        throw new Error(`Unable to update lead ${input.leadId}: ${legacyError.message}`);
+      }
+    } else if (error) {
       throw new Error(`Unable to update lead ${input.leadId}: ${error.message}`);
     }
 
@@ -187,6 +246,40 @@ export async function createOrUpdateLead(
     .select("id")
     .single();
 
+  if (error && isMissingColumnError(error)) {
+    const { data: legacyData, error: legacyError } = await supabase
+      .from("leads")
+      .insert(toLegacyLeadPayload({ ...leadPayload, client_id: clientId }))
+      .select("id")
+      .single();
+
+    if (legacyError) {
+      throw new Error(`Unable to create lead: ${legacyError.message}`);
+    }
+
+    await logAuditEvent({
+      entityType: "lead",
+      entityId: legacyData.id as string,
+      action: "LEAD_CREATED",
+      metadata: { status, missingFields: missing.missing_fields },
+    });
+
+    if (requiresHumanReview) {
+      await logAuditEvent({
+        entityType: "lead",
+        entityId: legacyData.id as string,
+        action: "LEAD_MARKED_HUMAN_REVIEW",
+        metadata: { reason: "INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE" },
+      });
+    }
+
+    return {
+      leadId: legacyData.id as string,
+      status,
+      missing_fields: missing.missing_fields,
+    };
+  }
+
   if (error) {
     throw new Error(`Unable to create lead: ${error.message}`);
   }
@@ -212,6 +305,39 @@ export async function createOrUpdateLead(
     status,
     missing_fields: missing.missing_fields,
   };
+}
+
+function compactRecord(record: Record<string, string | undefined>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(record).filter(([, value]) => typeof value === "string" && value.trim().length > 0),
+  ) as Record<string, string>;
+}
+
+function toLegacyLeadPayload(payload: Record<string, unknown>): Record<string, unknown> {
+  const legacyKeys = new Set([
+    "client_id",
+    "departure_city",
+    "arrival_city",
+    "departure_date",
+    "return_date",
+    "passenger_count",
+    "trip_type",
+    "has_intermediate_stop",
+    "intermediate_stops",
+    "options",
+    "free_message",
+    "status",
+    "missing_fields",
+    "human_review_reason",
+  ]);
+
+  return Object.fromEntries(
+    Object.entries(payload).filter(([key, value]) => legacyKeys.has(key) && value !== undefined),
+  );
+}
+
+function isMissingColumnError(error: { code?: string; message?: string }) {
+  return error.code === "42703" || /column .* does not exist/i.test(error.message ?? "");
 }
 
 export function createNeoTravelTools() {

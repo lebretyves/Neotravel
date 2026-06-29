@@ -47,7 +47,7 @@ Extraites par l'IA, validées par Zod avant tout usage. Non engageantes tant que
 | `return_date` | Si AR | Obligatoire si `trip_type = round_trip` |
 | `passenger_count` | Oui | Entier > 0 |
 | `trip_type` | Oui | `one_way` ou `round_trip` |
-| `options` | Non | `guide`, `nuit_chauffeur`, `peages` |
+| `options` | Non | `guide`, `nuit_chauffeur` ; les péages sont liés au trajet et non sélectionnables |
 | `free_message` | Non | Contexte libre, conservé pour l'humain |
 
 ### 2.2 Données contrôlées (produites par le système)
@@ -146,7 +146,7 @@ calculer_devis(input: QuoteInput): QuoteResult
 | `trip_type` | `one_way \| round_trip` | Oui | AR = base × 2 |
 | `passenger_count` | `number (int > 0)` | Oui | Détermine le véhicule |
 | `distance_km` | `number > 0` | Non | Source contrôlée seulement |
-| `options` | `{ guide_days, driver_nights, toll_package_eur }` | Non | |
+| `options` | `{ guide_days, driver_nights, toll_package_eur }` | Non | `toll_package_eur` reste une donnée contrôlée trajet/système, pas une option prospect |
 
 ### Sortie — `QuoteResult` (union discriminée)
 

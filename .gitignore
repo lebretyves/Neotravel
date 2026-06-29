@@ -8,6 +8,7 @@ dist/
 .env.*
 !.env.example
 admin-credentials.json
+pricing-matrix.json
 supabase/.branches/
 supabase/.temp/
 supabase/snippets/

@@ -81,8 +81,15 @@ export type PricingRules = {
   };
   leadTime: LeadTimePricingRule[];
   capacity: CapacityPricingRule[];
+  optionRates: OptionRates;
   marginRate: number;
   vatRate: number;
+};
+
+export type OptionRates = {
+  // Official supplément tariffs (Tableau 3). Guide is billed per day, driver per overnight.
+  guideDayRateEur: number;
+  driverNightRateEur: number;
 };
 
 export type QuoteBreakdown = {
