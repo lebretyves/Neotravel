@@ -40,9 +40,10 @@ type Item = {
   alpha?: boolean;
 };
 
-const groups: { title: string; items: Item[]; adminSection?: boolean }[] = [
+const groups: { title: string; items: Item[]; adminSection?: boolean; defaultExpanded?: boolean }[] = [
   {
     title: "Pipeline",
+    defaultExpanded: true,
     items: [
       { label: "Vue générale", href: "/dashboard", icon: LayoutDashboard },
       { label: "KPIs", href: "/dashboard/kpis", icon: BarChart3 },
@@ -57,6 +58,7 @@ const groups: { title: string; items: Item[]; adminSection?: boolean }[] = [
   },
   {
     title: "Pilotage",
+    defaultExpanded: false,
     items: [
       { label: "Vue admin", href: "/dashboard/admin", icon: Gauge, perm: "admin_view" },
       { label: "Tarification", href: "/dashboard/pricing", icon: FileText, perm: "pricing" },
@@ -71,11 +73,12 @@ const groups: { title: string; items: Item[]; adminSection?: boolean }[] = [
   {
     title: "Gouvernance",
     adminSection: true,
+    defaultExpanded: false,
     items: [{ label: "Équipe & accès", href: "/dashboard/gouvernance", icon: UserCog, adminOnly: true }]
   }
 ];
 
-const NAV_EXPANDED_STORAGE_KEY = "neotravel.dashboard.navExpanded.v1";
+const NAV_EXPANDED_STORAGE_KEY = "neotravel.dashboard.navExpanded.v2";
 
 function groupHasActive(pathname: string, items: Item[]) {
   return items.some((item) => isActive(pathname, item.href));
@@ -139,7 +142,9 @@ export function DashboardSidebar({
 
     for (const group of visibleGroups) {
       const wasStored = Object.prototype.hasOwnProperty.call(stored, group.title);
-      next[group.title] = wasStored ? Boolean(stored[group.title]) : groupHasActive(pathname, group.items);
+      next[group.title] = wasStored
+        ? Boolean(stored[group.title])
+        : groupHasActive(pathname, group.items) || Boolean(group.defaultExpanded);
     }
 
     setExpandedSections(next);
@@ -211,7 +216,9 @@ export function DashboardSidebar({
 
         <div className={styles.navScroll}>
           {visibleGroups.map((group) => {
-            const isExpanded = expandedSections[group.title] ?? groupHasActive(pathname, group.items);
+            const isExpanded =
+              expandedSections[group.title] ??
+              (groupHasActive(pathname, group.items) || Boolean(group.defaultExpanded));
 
             return (
               <div key={group.title} className={styles.navSection} data-expanded={isExpanded ? "true" : "false"}>
