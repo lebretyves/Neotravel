@@ -7,6 +7,12 @@ import { triggerHumanReview } from "../../shared/lib/n8n/triggerHumanReview";
 export type LeadRecord = {
   id: string;
   client_id: string | null;
+  client_type?: string | null;
+  name?: string | null;
+  contact_name?: string | null;
+  organization?: string | null;
+  email?: string | null;
+  phone?: string | null;
   departure_city: string | null;
   arrival_city: string | null;
   departure_date: string | null;
@@ -24,13 +30,27 @@ export type LeadRecord = {
 
 export async function getLeadById(leadId: string): Promise<LeadRecord | null> {
   const supabase = createServerSupabaseClient();
-  const { data, error } = await supabase.from("leads").select("*").eq("id", leadId).single();
+  const { data, error } = await supabase
+    .from("leads")
+    .select("*, clients(name, contact_name, organization, email, phone)")
+    .eq("id", leadId)
+    .single();
 
   if (error) {
     throw new Error(`Unable to load lead ${leadId}: ${error.message}`);
   }
 
-  return data as LeadRecord | null;
+  if (!data) return null;
+
+  const client = Array.isArray(data.clients) ? data.clients[0] : data.clients;
+  return {
+    ...(data as LeadRecord),
+    name: client?.name ?? null,
+    contact_name: client?.contact_name ?? client?.name ?? null,
+    organization: client?.organization ?? null,
+    email: client?.email ?? null,
+    phone: client?.phone ?? null,
+  };
 }
 
 export async function updateLeadStatus(

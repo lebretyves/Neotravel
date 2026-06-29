@@ -13,6 +13,39 @@ function parseTripType(message: string): LeadQualification["trip_type"] | undefi
   return undefined;
 }
 
+function parsePhone(message: string): string | undefined {
+  const match = /(?:\+33|0)\s*[1-9](?:[\s.-]*\d{2}){4}\b/u.exec(message);
+  return match?.[0]?.replace(/\s+/gu, " ").trim();
+}
+
+function parseClientType(message: string): string | undefined {
+  const normalized = normalizeUserText(message).toLocaleLowerCase("fr-FR");
+  if (/\b(particulier|client particulier)\b/u.test(normalized)) return "Particulier";
+  if (/\b(entreprise|societe|société|client pro|professionnel)\b/u.test(normalized)) return "Entreprise";
+  if (/\b(association|asso)\b/u.test(normalized)) return "Association";
+  if (/\b(agence|agence de voyage)\b/u.test(normalized)) return "Agence";
+  if (/\b(ecole|école|college|collège|lycee|lycée|universite|université)\b/u.test(normalized)) return "École";
+  if (/\b(collectivite|collectivité|mairie|commune)\b/u.test(normalized)) return "Collectivité";
+  return undefined;
+}
+
+function parseContactName(message: string): string | undefined {
+  const match =
+    /\b(?:contact|nom du contact|nom de contact)\s*[:=-]?\s*([\p{L}'’ -]{2,60})(?:$|[,.!?;]|\s+(?:tel|tél|telephone|téléphone|mail|email)\b)/iu.exec(message) ??
+    /\b(?:je m'appelle|je suis)\s+([\p{L}'’ -]{2,60})(?:$|[,.!?;])/iu.exec(message);
+  return cleanName(match?.[1]);
+}
+
+function cleanName(value: string | undefined): string | undefined {
+  const name = value?.trim().replace(/\s+/gu, " ");
+  if (!name || name.length > 60) return undefined;
+  if (!/^[\p{L}][\p{L}'’ -]*$/u.test(name)) return undefined;
+  return name
+    .split(/([\s'’ -])/u)
+    .map((part) => (/^[\p{L}]/u.test(part) ? part.charAt(0).toLocaleUpperCase("fr-FR") + part.slice(1) : part))
+    .join("");
+}
+
 const MONTHS: Record<string, number> = {
   janvier: 0,
   février: 1,
@@ -38,8 +71,24 @@ export function extractTurnFacts(
   lastAssistantText = "",
 ): Partial<LeadQualification> {
   const facts: Partial<LeadQualification> = {};
+  const phone = parsePhone(message);
+  const clientType = parseClientType(message);
+  const contactName = parseContactName(message);
   const cityMentions = parseCityMentions(message);
   const contextualCity = parseContextualCityAnswer(message);
+
+  if (!existing.phone && phone) {
+    facts.phone = phone;
+  }
+
+  if (!existing.client_type && clientType) {
+    facts.client_type = clientType;
+  }
+
+  if (!existing.contact_name && contactName) {
+    facts.contact_name = contactName;
+    facts.name = facts.name ?? contactName;
+  }
 
   if (!existing.departure_city && cityMentions.departure_city) {
     facts.departure_city = cityMentions.departure_city;

@@ -25,7 +25,9 @@ export function LeadMessages({ lead }: { lead: Lead }) {
      <p className={styles.routeTitle}>{routeLabel}</p>
     </div>
     {confidence !== null ? (
-     <span className={styles.confidence}>{confidence}% fiable</span>
+     <span className={styles.confidence} title="Score de confiance de l'extraction automatique des informations.">
+      Confiance IA {confidence}%
+     </span>
     ) : null}
    </div>
 

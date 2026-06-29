@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
+ Archive,
+ BarChart3,
  Bell,
  Cpu,
  FileText,
@@ -28,7 +30,9 @@ const groups: { title: string; items: Item[] }[] = [
   title: "Pipeline",
   items: [
    { label: "Vue générale", href: "/dashboard", icon: LayoutDashboard },
+   { label: "KPIs", href: "/dashboard/kpis", icon: BarChart3 },
    { label: "Demandes", href: "/dashboard/demandes", icon: Inbox, perm: "leads" },
+   { label: "Archives demandes", href: "/dashboard/demandes/archive", icon: Archive, perm: "leads" },
    { label: "Validation humaine", href: "/dashboard/human-review", icon: ShieldCheck, perm: "human_review" },
    { label: "Devis", href: "/dashboard/devis", icon: FileText, perm: "quotes" },
    { label: "Relances", href: "/dashboard/relances", icon: Bell, perm: "followups" }

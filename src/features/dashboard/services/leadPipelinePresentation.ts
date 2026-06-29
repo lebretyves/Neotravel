@@ -110,12 +110,12 @@ export function getLeadCommercialAction({
 
  if ((lead.status === "QUALIFIED" || lead.status === "HIGH_VALUE") && !quote) {
   return {
-   label: "Générer devis",
-   detail: "Demande qualifiée sans proposition existante.",
-   cta: "Générer",
+   label: "Automatisation a reprendre",
+   detail: "Demande qualifiee sans devis : le flux attendu est devis auto ou validation humaine.",
+   cta: "Verifier",
    href: leadHref,
-   priority: 3,
-   tone: "info"
+   priority: 0,
+   tone: "critical"
   };
  }
 

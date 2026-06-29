@@ -97,6 +97,7 @@ export async function createOrUpdateLead(
     : missing.status;
   const supabase = createServerSupabaseClient();
   const leadPayload = {
+    client_type: lead.client_type ?? null,
     departure_city: lead.departure_city ?? null,
     arrival_city: lead.arrival_city ?? null,
     departure_date: lead.departure_date ?? null,
@@ -129,13 +130,31 @@ export async function createOrUpdateLead(
 
     if (existingClient?.id) {
       clientId = existingClient.id as string;
+      const clientUpdate = compactRecord({
+        name: lead.name ?? lead.contact_name,
+        contact_name: lead.contact_name ?? lead.name,
+        organization: lead.organization,
+        phone: lead.phone,
+      });
+      if (Object.keys(clientUpdate).length > 0) {
+        const { error: updateClientError } = await supabase
+          .from("clients")
+          .update(clientUpdate)
+          .eq("id", clientId);
+
+        if (updateClientError) {
+          throw new Error(`Unable to update client: ${updateClientError.message}`);
+        }
+      }
     } else {
       const { data: client, error: clientError } = await supabase
         .from("clients")
         .insert({
-          name: lead.name ?? null,
+          name: lead.name ?? lead.contact_name ?? null,
+          contact_name: lead.contact_name ?? lead.name ?? null,
           organization: lead.organization ?? null,
           email: lead.email,
+          phone: lead.phone ?? null,
         })
         .select("id")
         .single();
@@ -212,6 +231,12 @@ export async function createOrUpdateLead(
     status,
     missing_fields: missing.missing_fields,
   };
+}
+
+function compactRecord(record: Record<string, string | undefined>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(record).filter(([, value]) => typeof value === "string" && value.trim().length > 0),
+  ) as Record<string, string>;
 }
 
 export function createNeoTravelTools() {

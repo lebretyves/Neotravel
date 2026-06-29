@@ -93,7 +93,7 @@ export function buildReplyPrompt(ctx: ReplyContext): string {
 
   const objective =
     ctx.status === "QUALIFIED"
-      ? `Toutes les informations nécessaires sont réunies. Confirme-le brièvement et invite le client à cliquer sur le bouton "Recevoir mon devis".`
+      ? `Toutes les informations necessaires sont reunies et le devis se prepare automatiquement. Confirme-le brievement, sans demander au client de cliquer sur un bouton.`
       : `Il manque des informations. Termine ta réponse en demandant UNIQUEMENT la première information manquante : "${ctx.missingFields.map(labelFor)[0] ?? ""}".`;
 
   return `Tu es l'assistant NeoTravel, tu qualifies par chat une demande de transport de groupe en autocar.

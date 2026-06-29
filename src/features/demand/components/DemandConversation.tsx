@@ -183,12 +183,16 @@ const ROUTE_PREVIEW_DEBOUNCE_MS = 650;
 const MIN_ROUTE_LABEL_LENGTH = 2;
 
 type ChatExtracted = {
+  clientType: string | null;
+  contactName: string | null;
+  organization: string | null;
   departureCity: string | null;
   arrivalCity: string | null;
   departureDate: string | null;
   returnDate: string | null;
   passengerCount: number | null;
   tripType: "one_way" | "round_trip" | null;
+  phone: string | null;
 };
 
 type DemandSessionCache = {
@@ -197,6 +201,10 @@ type DemandSessionCache = {
   qualifiedLeadId: string | null;
   chatHumanReview: boolean;
   chatEmail: string | null;
+  chatClientType?: string | null;
+  chatContactName?: string | null;
+  chatOrganization?: string | null;
+  chatPhone?: string | null;
   chatExtracted: ChatExtracted;
   selectedOptions?: string[];
   multiDestination?: boolean;
@@ -320,17 +328,25 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
   const [qualifiedLeadId, setQualifiedLeadId] = useState<string | null>(null);
   const [chatHumanReview, setChatHumanReview] = useState(false);
   const [chatEmail, setChatEmail] = useState<string | null>(null);
+  const [chatClientType, setChatClientType] = useState<string | null>(null);
+  const [chatContactName, setChatContactName] = useState<string | null>(null);
+  const [chatOrganization, setChatOrganization] = useState<string | null>(null);
+  const [chatPhone, setChatPhone] = useState<string | null>(null);
   const [selectedOptions, setSelectedOptions] = useState<string[]>(() => demand.options);
   const [multiDestination, setMultiDestination] = useState(() => demand.intermediateStops.length > 0);
   const [stops, setStops] = useState<string[]>(() => demand.intermediateStops);
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [chatExtracted, setChatExtracted] = useState<ChatExtracted>({
+    clientType: null,
+    contactName: null,
+    organization: null,
     departureCity: null,
     arrivalCity: null,
     departureDate: null,
     returnDate: null,
     passengerCount: null,
     tripType: null,
+    phone: null,
   });
 
   // Hydrate a prior session on mount, then persist the meaningful slice on every change.
@@ -345,6 +361,10 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
       setQualifiedLeadId(cached.qualifiedLeadId);
       setChatHumanReview(cached.chatHumanReview);
       setChatEmail(cached.chatEmail);
+      setChatClientType(cached.chatClientType ?? cached.chatExtracted.clientType ?? null);
+      setChatContactName(cached.chatContactName ?? cached.chatExtracted.contactName ?? null);
+      setChatOrganization(cached.chatOrganization ?? cached.chatExtracted.organization ?? null);
+      setChatPhone(cached.chatPhone ?? cached.chatExtracted.phone ?? null);
       setChatExtracted(cached.chatExtracted);
       setSelectedOptions(normalizeOptionCodes(cached.selectedOptions ?? []));
       setMultiDestination(Boolean(cached.multiDestination));
@@ -362,15 +382,22 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
       qualifiedLeadId,
       chatHumanReview,
       chatEmail,
+      chatClientType,
+      chatContactName,
+      chatOrganization,
+      chatPhone,
       chatExtracted,
       selectedOptions,
       multiDestination,
       stops,
     });
-  }, [chatMessages, currentLeadId, qualifiedLeadId, chatHumanReview, chatEmail, chatExtracted, selectedOptions, multiDestination, stops]);
+  }, [chatMessages, currentLeadId, qualifiedLeadId, chatHumanReview, chatEmail, chatClientType, chatContactName, chatOrganization, chatPhone, chatExtracted, selectedOptions, multiDestination, stops]);
 
   // activeDemand: fusionne URL params + ce que le chat a extrait + éditions manuelles
   const activeDemand = useMemo(() => ({
+    clientType: chatClientType || chatExtracted.clientType || null,
+    contactName: chatContactName || chatExtracted.contactName || null,
+    organization: chatOrganization || chatExtracted.organization || null,
     departureCity: chatExtracted.departureCity || demand.departure || null,
     arrivalCity: chatExtracted.arrivalCity || demand.arrival || null,
     departureDate: chatExtracted.departureDate || initialDemand.departureDate?.trim() || null,
@@ -381,8 +408,9 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
         ? Number(demand.passengers)
         : null),
     tripType: chatExtracted.tripType ?? (initialDemand.tripType === "one_way" ? "one_way" as const : initialDemand.tripType ? "round_trip" as const : null),
+    phone: chatPhone || chatExtracted.phone || null,
     options: selectedOptions,
-  }), [chatExtracted, demand, initialDemand, selectedOptions]);
+  }), [chatClientType, chatContactName, chatOrganization, chatPhone, chatExtracted, demand, initialDemand, selectedOptions]);
 
   // Client-side validation mirrors the server (same shared validators) for instant
   // feedback on manual edits. The quote button is gated on these.
@@ -414,8 +442,11 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
   const demandDraft = useMemo<DemandDraft>(
     () => ({
       rawMessage: undefined,
-      organization: null,
-      email: null,
+      clientType: activeDemand.clientType,
+      contactName: activeDemand.contactName,
+      organization: activeDemand.organization,
+      email: chatEmail,
+      phone: activeDemand.phone,
       departureCity: activeDemand.departureCity,
       arrivalCity: activeDemand.arrivalCity,
       departureDate: activeDemand.departureDate,
@@ -424,7 +455,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
       tripType: activeDemand.tripType,
       options: activeDemand.options,
     }),
-    [activeDemand]
+    [activeDemand, chatEmail]
   );
   const missingFields = useMemo(
     () =>
@@ -483,16 +514,24 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
     setQualifiedLeadId(null);
     setChatHumanReview(false);
     setChatEmail(null);
+    setChatClientType(null);
+    setChatContactName(null);
+    setChatOrganization(null);
+    setChatPhone(null);
     setSelectedOptions([]);
     setMultiDestination(false);
     setStops([]);
     setChatExtracted({
+      clientType: null,
+      contactName: null,
+      organization: null,
       departureCity: null,
       arrivalCity: null,
       departureDate: null,
       returnDate: null,
       passengerCount: null,
       tripType: null,
+      phone: null,
     });
     setUserInput("");
     setWorkflowError(null);
@@ -503,6 +542,21 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
     setSelectedOptions((prev) =>
       prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
     );
+  }
+
+  function updateTripType(value: string) {
+    if (value === "multi_stop") {
+      setMultiDestination(true);
+      setChatExtracted((prev) => ({ ...prev, tripType: prev.tripType ?? "one_way" }));
+      return;
+    }
+
+    setMultiDestination(false);
+    setStops([]);
+    setChatExtracted((prev) => ({
+      ...prev,
+      tripType: value ? (value as "one_way" | "round_trip") : null,
+    }));
   }
 
   async function sendMessage(e?: React.FormEvent) {
@@ -531,6 +585,9 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
         leadId?: string;
         quoteId?: string;
         extractedFields?: {
+          clientType: string | null;
+          contactName: string | null;
+          organization: string | null;
           departureCity: string | null;
           arrivalCity: string | null;
           departureDate: string | null;
@@ -538,6 +595,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
           passengerCount: number | null;
           tripType: "one_way" | "round_trip" | null;
           email: string | null;
+          phone: string | null;
           options?: string[];
           multiDestination?: boolean;
           stops?: string[];
@@ -550,16 +608,24 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
       const ef = data.extractedFields;
       if (ef) {
         if (ef.email) setChatEmail(ef.email);
+        if (ef.clientType) setChatClientType(ef.clientType);
+        if (ef.contactName) setChatContactName(ef.contactName);
+        if (ef.organization) setChatOrganization(ef.organization);
+        if (ef.phone) setChatPhone(ef.phone);
         if (ef.options?.length) setSelectedOptions((prev) => normalizeOptionCodes([...prev, ...ef.options!]));
         if (ef.multiDestination) setMultiDestination(true);
         if (ef.stops?.length) setStops(ef.stops);
         setChatExtracted((prev) => ({
+          clientType: ef.clientType ?? prev.clientType,
+          contactName: ef.contactName ?? prev.contactName,
+          organization: ef.organization ?? prev.organization,
           departureCity: ef.departureCity ?? prev.departureCity,
           arrivalCity: ef.arrivalCity ?? prev.arrivalCity,
           departureDate: ef.departureDate ?? prev.departureDate,
           returnDate: ef.returnDate ?? prev.returnDate,
           passengerCount: ef.passengerCount ?? prev.passengerCount,
           tripType: ef.tripType ?? prev.tripType,
+          phone: ef.phone ?? prev.phone,
         }));
       }
       setChatMessages((prev) => [...prev, { role: "assistant", content: data.message }]);
@@ -606,14 +672,20 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...(currentLeadId ? { leadId: currentLeadId } : {}),
+          clientType: activeDemand.clientType,
+          contactName: activeDemand.contactName,
+          organization: activeDemand.organization,
           departureCity: activeDemand.departureCity,
           arrivalCity: activeDemand.arrivalCity,
           departureDate: activeDemand.departureDate,
           returnDate: activeDemand.tripType === "round_trip" ? activeDemand.returnDate : null,
           passengerCount: activeDemand.passengerCount,
           tripType: activeDemand.tripType,
+          hasIntermediateStop: multiDestination,
+          intermediateStops: stops,
           options: selectedOptions,
           email: normalizeEmailForApi(chatEmail),
+          phone: activeDemand.phone,
         }),
       });
       const sync = (await syncResponse.json()) as {
@@ -665,13 +737,19 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
             ]
               .filter(Boolean)
               .join(" — "),
+            clientType: activeDemand.clientType,
+            contactName: activeDemand.contactName,
+            organization: activeDemand.organization,
             email: normalizeEmailForApi(chatEmail),
+            phone: activeDemand.phone,
             departureCity: activeDemand.departureCity,
             arrivalCity: activeDemand.arrivalCity,
             departureDate: activeDemand.departureDate,
             returnDate: activeDemand.tripType === "round_trip" ? activeDemand.returnDate : null,
             passengerCount: activeDemand.passengerCount,
             tripType: activeDemand.tripType,
+            hasIntermediateStop: multiDestination,
+            intermediateStops: stops,
             options: activeDemand.options,
             qualify: false,
           }),
@@ -969,10 +1047,10 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
                 {hasInitialDemand && missingFields.length
                   ? requiresHumanReview
                     ? `Il manque encore : ${demoBlockingMissingFields.join(", ")}. Un conseiller pourra vérifier votre demande.`
-                    : "Les informations de trajet sont suffisantes. Ajoutez vos coordonnées avant l’envoi."
+                    : "Les informations de trajet sont suffisantes. Ajoutez le type de client, le nom du contact, le téléphone et l'email avant l'envoi."
                   : hasInitialDemand
-                    ? "Merci, les informations principales sont complètes pour préparer le devis."
-                    : "Indiquez simplement votre départ, votre arrivée, la date et le nombre de passagers."}
+                    ? "Merci, les informations principales sont complètes pour préparer le devis. Indiquez aussi le type de client, le nom du contact et le téléphone."
+                    : "Indiquez simplement votre départ, votre arrivée, la date, le nombre de passagers, puis le type de client, le nom du contact et le téléphone."}
               </p>
             </div>
             {chatMessages.map((msg, i) => (
@@ -1061,13 +1139,9 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
           <aside className={styles.sidePanel} id="infos">
             <div className={styles.sidePanelHeader}>
               <h2>Trajet et options</h2>
-              <span className={qualifiedLeadId ? styles.readyStatus : hasAnyDemand && demoBlockingMissingFields.length === 0 ? styles.readyStatus : requiresHumanReview ? styles.reviewStatus : styles.pendingStatus}>
-                {qualifiedLeadId ? "Prêt pour devis" : hasAnyDemand && demoBlockingMissingFields.length === 0 ? "Complet" : requiresHumanReview ? "Infos manquantes" : "En attente"}
-              </span>
             </div>
 
             <div className={styles.manualForm}>
-              <p className={styles.manualFormTitle}>Trajet — modifiable à tout moment</p>
               <div className={styles.manualFields}>
                 <label>
                   <span>Départ</span>
@@ -1080,6 +1154,17 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
                     }
                   />
                 </label>
+                {multiDestination ? (
+                  <label>
+                    <span>Ville inter.</span>
+                    <input
+                      type="text"
+                      placeholder="ex: Lyon, Dijon"
+                      value={stops.join(", ")}
+                      onChange={(e) => setStops(splitValues(e.target.value))}
+                    />
+                  </label>
+                ) : null}
                 <label>
                   <span>Arrivée</span>
                   <input
@@ -1107,17 +1192,13 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
                 <label>
                   <span>Type</span>
                   <select
-                    value={activeDemand.tripType ?? ""}
-                    onChange={(e) =>
-                      setChatExtracted((p) => ({
-                        ...p,
-                        tripType: e.target.value ? (e.target.value as "one_way" | "round_trip") : null,
-                      }))
-                    }
+                    value={multiDestination ? "multi_stop" : activeDemand.tripType ?? ""}
+                    onChange={(e) => updateTripType(e.target.value)}
                   >
                     <option value="">--</option>
                     <option value="one_way">Aller simple</option>
                     <option value="round_trip">Aller-retour</option>
+                    <option value="multi_stop">Multi-destination / avec escale</option>
                   </select>
                 </label>
                 {activeDemand.tripType === "round_trip" ? (
@@ -1172,24 +1253,59 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
                     })}
                   </div>
                 </div>
+              </div>
+            </div>
+          </aside>
 
-                {multiDestination ? (
-                  <div className={styles.stopsField}>
-                    <span className={styles.stopsLabel}>Étapes intermédiaires</span>
-                    {stops.length ? (
-                      <div className={styles.stopTags}>
-                        {stops.map((stop) => (
-                          <span className={styles.stopTag} key={stop}>
-                            {stop}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-                    <small className={styles.stopsNote}>
-                      Trajet multi-destination — un conseiller vérifie l&apos;itinéraire avant le devis.
-                    </small>
-                  </div>
-                ) : null}
+          <aside className={styles.sidePanel} aria-labelledby="contact-panel-title">
+            <div className={styles.sidePanelHeader}>
+              <h2 id="contact-panel-title">Vos coordonnees</h2>
+            </div>
+
+            <div className={styles.manualForm}>
+              <div className={styles.manualFields}>
+                <label>
+                  <span>Type de client</span>
+                  <select
+                    value={activeDemand.clientType ?? ""}
+                    onChange={(e) => setChatClientType(e.target.value || null)}
+                  >
+                    <option value="">--</option>
+                    <option value="Particulier">Particulier</option>
+                    <option value="Entreprise">Entreprise</option>
+                    <option value="Association">Association</option>
+                    <option value="Agence">Agence</option>
+                    <option value="Ecole">Ecole</option>
+                    <option value="Collectivite">Collectivite</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Organisation</span>
+                  <input
+                    type="text"
+                    placeholder="ex: Alpha Conseil"
+                    value={activeDemand.organization ?? ""}
+                    onChange={(e) => setChatOrganization(e.target.value.trim() ? e.target.value : null)}
+                  />
+                </label>
+                <label>
+                  <span>Nom du contact</span>
+                  <input
+                    type="text"
+                    placeholder="ex: Marie Dupont"
+                    value={activeDemand.contactName ?? ""}
+                    onChange={(e) => setChatContactName(e.target.value.trim() ? e.target.value : null)}
+                  />
+                </label>
+                <label>
+                  <span>Téléphone</span>
+                  <input
+                    type="tel"
+                    placeholder="ex: 06 12 34 56 78"
+                    value={activeDemand.phone ?? ""}
+                    onChange={(e) => setChatPhone(e.target.value.trim() ? e.target.value : null)}
+                  />
+                </label>
                 <label className={qualifiedLeadId && !chatEmail && !hasInitialDemand ? styles.fieldInvalid : undefined}>
                   <span>Email de contact {qualifiedLeadId && !hasInitialDemand ? <strong aria-hidden="true"> *</strong> : null}</span>
                   <input

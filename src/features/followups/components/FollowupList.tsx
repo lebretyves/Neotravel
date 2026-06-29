@@ -52,7 +52,7 @@ export function FollowupList({ followups }: { followups: Followup[] }) {
             <h2 id="followups-title">Relances planifiees et envoyees</h2>
             <p>Standard : J+3 puis J+7. Urgent traitable : J+2. Demo rapide : +2 minutes si activee.</p>
           </div>
-          <span className={styles.badge}>Apres 2 sans reponse : CLOSED ou humain forte valeur</span>
+          <span className={styles.badge}>Apres 2 sans reponse : CLOSED apres delai</span>
         </div>
         {followups.length === 0 ? (
           <p className={styles.empty}>Aucune relance planifiee pour le moment.</p>
@@ -84,7 +84,7 @@ export function FollowupList({ followups }: { followups: Followup[] }) {
           <li>QUOTE_SENT declenche la sequence.</li>
           <li>Relance 1 selon contexte : J+2 urgent traitable, J+3 standard.</li>
           <li>Relance 2 standard a J+7 maximum.</li>
-          <li>Sans reponse apres delai de grace : CLOSED, ou reprise humaine si forte valeur.</li>
+          <li>Sans reponse apres delai de grace : CLOSED.</li>
         </ol>
       </section>
     </main>

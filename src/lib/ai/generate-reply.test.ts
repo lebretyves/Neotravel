@@ -32,9 +32,10 @@ describe("buildReplyPrompt", () => {
     expect(prompt).toContain('UNIQUEMENT la première information manquante : "ville d\'arrivée"');
   });
 
-  it("invites to the quote button when QUALIFIED", () => {
+  it("announces automatic quote preparation when QUALIFIED", () => {
     const prompt = buildReplyPrompt({ ...baseCtx, status: "QUALIFIED", missingFields: [] });
-    expect(prompt).toContain("Recevoir mon devis");
+    expect(prompt).toContain("devis se prepare automatiquement");
+    expect(prompt).not.toContain("Recevoir mon devis");
   });
 
   it("instructs the model from the generic last-turn signal", () => {
@@ -74,9 +75,9 @@ describe("generateAssistantReply", () => {
     const generate = vi.fn().mockRejectedValue(new Error("down"));
     const reply = await generateAssistantReply(
       { ...baseCtx, status: "QUALIFIED", missingFields: [] },
-      { generate, fallback: "Demande prête, cliquez sur Recevoir mon devis." },
+      { generate, fallback: "Demande prete, le devis se prepare automatiquement." },
     );
-    expect(reply).toBe("Demande prête, cliquez sur Recevoir mon devis.");
+    expect(reply).toBe("Demande prete, le devis se prepare automatiquement.");
   });
 
   it("uses deterministic wording when the last turn added no usable date", async () => {

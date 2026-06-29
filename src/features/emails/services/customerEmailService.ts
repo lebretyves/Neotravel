@@ -1,5 +1,5 @@
 import { logAuditEvent } from "../../../lib/audit/audit-service";
-import { updateLeadStatus } from "../../../lib/leads/lead-service";
+import { markHumanReview, updateLeadStatus } from "../../../lib/leads/lead-service";
 import { createServerSupabaseClient } from "../../../lib/supabase/server";
 import { scheduleFollowups } from "../../followups/services/scheduleFollowups";
 import { triggerCustomerEmail } from "../../../shared/lib/n8n/triggerCustomerEmail";
@@ -143,8 +143,18 @@ export async function sendQuoteAvailableEmail(input: {
   const { error: quoteError } = await supabase.from("quotes").update({ status: "QUOTE_SENT" }).eq("id", quote.id);
   if (quoteError) throw new AppError("Statut devis non mis à jour.", "EMAIL_STATUS_UPDATE_FAILED");
 
+  if (isDepartureWithinHours(lead.departure_date, 48)) {
+    await markHumanReview(quote.lead_id, "URGENT_DEPARTURE_UNDER_48H");
+    return result;
+  }
+
   await updateLeadStatus(quote.lead_id, "QUOTE_SENT", { quoteId: quote.id, emailScenario: "QUOTE_AVAILABLE" });
-  await scheduleFollowups({ leadId: quote.lead_id, quoteId: quote.id, quoteStatus: "QUOTE_SENT" });
+  await scheduleFollowups({
+    leadId: quote.lead_id,
+    quoteId: quote.id,
+    quoteStatus: "QUOTE_SENT",
+    isUrgent: isUrgentLead(lead),
+  });
 
   return result;
 }
@@ -179,6 +189,12 @@ export async function sendFollowupEmail(input: {
   const { error } = await supabase.from("followups").update({ status: "sent" }).eq("id", followup.id);
   if (error) throw new AppError("Statut relance non mis à jour.", "EMAIL_STATUS_UPDATE_FAILED");
 
+  await updateLeadAfterFollowupSent({
+    lead,
+    leadId: followup.lead_id,
+    quoteId: followup.quote_id,
+  });
+
   await logAuditEvent({
     entityType: "followup",
     entityId: followup.id,
@@ -189,8 +205,11 @@ export async function sendFollowupEmail(input: {
   return result;
 }
 
+const FOLLOWUP_CLOSURE_GRACE_DAYS = 7;
+
 export async function sendDueFollowupEmails(input: { now?: Date; limit?: number; triggeredBy?: "n8n" } = {}) {
-  const nowIso = (input.now ?? new Date()).toISOString();
+  const now = input.now ?? new Date();
+  const nowIso = now.toISOString();
   const limit = input.limit ?? 20;
   const supabase = createServerSupabaseClient();
   const { data, error } = await supabase
@@ -208,7 +227,90 @@ export async function sendDueFollowupEmails(input: { now?: Date; limit?: number;
     results.push(await sendFollowupEmail({ followupId: item.id as string, triggeredBy: input.triggeredBy ?? "n8n" }));
   }
 
-  return { processed: results.length, results };
+  const closures = await closeLeadsAfterSecondFollowupGracePeriod({ now });
+
+  return { processed: results.length, results, closures };
+}
+
+async function updateLeadAfterFollowupSent(input: {
+  lead: LeadEmailRow;
+  leadId: string;
+  quoteId: string;
+}) {
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("followups")
+    .select("id")
+    .eq("quote_id", input.quoteId)
+    .eq("status", "sent");
+
+  if (error) throw new AppError("Lecture des relances envoyees impossible.", "EMAIL_STATUS_UPDATE_FAILED");
+
+  const sentCount = data?.length ?? 0;
+  const urgent = isUrgentLead(input.lead);
+
+  if (urgent && sentCount >= 1) {
+    await markHumanReview(input.leadId, "URGENT_FOLLOWUP_REQUIRES_HUMAN_REVIEW");
+    return;
+  }
+
+  if (sentCount <= 0) return;
+
+  if (sentCount === 1) {
+    await updateLeadStatus(input.leadId, "FOLLOWUP_1", {
+      quoteId: input.quoteId,
+      sentFollowupsWithoutResponse: sentCount,
+    });
+    return;
+  }
+
+  await updateLeadStatus(input.leadId, "FOLLOWUP_2", {
+    quoteId: input.quoteId,
+    sentFollowupsWithoutResponse: sentCount,
+  });
+}
+
+async function closeLeadsAfterSecondFollowupGracePeriod(input: { now: Date }) {
+  const cutoff = new Date(input.now.getTime() - FOLLOWUP_CLOSURE_GRACE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const supabase = createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("followups")
+    .select("id, lead_id, quote_id, scheduled_at, leads(id, status)")
+    .eq("status", "sent")
+    .lte("scheduled_at", cutoff)
+    .order("scheduled_at", { ascending: false });
+
+  if (error) throw new AppError("Lecture des relances a cloturer impossible.", "EMAIL_STATUS_UPDATE_FAILED");
+
+  const latestByLead = new Map<string, { id: string; lead_id: string; quote_id: string | null; scheduled_at: string; leads?: LeadEmailRow | LeadEmailRow[] | null }>();
+  for (const followup of data ?? []) {
+    if (!followup.lead_id || latestByLead.has(followup.lead_id)) continue;
+    latestByLead.set(followup.lead_id, followup as unknown as { id: string; lead_id: string; quote_id: string | null; scheduled_at: string; leads?: LeadEmailRow | LeadEmailRow[] | null });
+  }
+
+  const closed: string[] = [];
+  for (const followup of latestByLead.values()) {
+    const lead = one(followup.leads);
+    if (!lead || lead.status !== "FOLLOWUP_2") continue;
+
+    const { count, error: countError } = await supabase
+      .from("followups")
+      .select("id", { count: "exact", head: true })
+      .eq("lead_id", followup.lead_id)
+      .eq("status", "sent");
+
+    if (countError) throw new AppError("Comptage des relances envoyees impossible.", "EMAIL_STATUS_UPDATE_FAILED");
+    if ((count ?? 0) < 2) continue;
+
+    await updateLeadStatus(followup.lead_id, "CLOSED", {
+      quoteId: followup.quote_id,
+      sentFollowupsWithoutResponse: count,
+      reason: "NO_RESPONSE_7_DAYS_AFTER_SECOND_FOLLOWUP",
+    });
+    closed.push(followup.lead_id);
+  }
+
+  return { closed, cutoff };
 }
 
 async function sendEmail(input: {
@@ -380,6 +482,26 @@ function skippedResult(scenario: CustomerEmailScenario, lead: LeadEmailRow, reas
 function one<T>(value: T | T[] | null | undefined): T | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value ?? null;
+}
+
+function isUrgentLead(lead: LeadEmailRow) {
+  return isDepartureBetweenHours(lead.departure_date, 48, 7 * 24);
+}
+
+function isDepartureWithinHours(value: string | null | undefined, hours: number) {
+  if (!value) return false;
+  const departure = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(departure.getTime())) return false;
+  const diffMs = departure.getTime() - Date.now();
+  return diffMs >= 0 && diffMs <= hours * 60 * 60 * 1000;
+}
+
+function isDepartureBetweenHours(value: string | null | undefined, minHours: number, maxHours: number) {
+  if (!value) return false;
+  const departure = new Date(`${value}T12:00:00`);
+  if (Number.isNaN(departure.getTime())) return false;
+  const diffMs = departure.getTime() - Date.now();
+  return diffMs > minHours * 60 * 60 * 1000 && diffMs <= maxHours * 60 * 60 * 1000;
 }
 
 function display(value: string | null | undefined) {
