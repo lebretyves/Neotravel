@@ -24,22 +24,54 @@ const STATUS_OPTIONS = [
  "CLOSED"
 ];
 
+const OPTION_CHOICES = [
+ { code: "guide", label: "Guide / accompagnateur" },
+ { code: "driver_overnight", label: "Nuit chauffeur" }
+];
+
+const OPTION_ALIASES = new Map<string, string>([
+ ["guide", "guide"],
+ ["accompagnateur", "guide"],
+ ["driver_overnight", "driver_overnight"],
+ ["driverovernight", "driver_overnight"],
+ ["nuit chauffeur", "driver_overnight"],
+ ["nuit_chauffeur", "driver_overnight"]
+]);
+
 type SaveState = { status: "idle" | "saving" | "saved" | "error"; message?: string };
+
+function normalizeOptions(options: string[]) {
+ return [
+  ...new Set(
+   options
+    .map((option) => {
+     const trimmed = option.trim();
+     return OPTION_ALIASES.get(trimmed.toLocaleLowerCase("fr-FR")) ?? trimmed;
+    })
+    .filter(Boolean)
+  )
+ ];
+}
 
 export function LeadEditForm({ lead }: { lead: Lead }) {
  const router = useRouter();
  const isReview = lead.status === "HUMAN_REVIEW";
 
  const [form, setForm] = useState({
+  clientType: lead.clientType ?? "",
+  contactName: lead.contactName ?? "",
   organization: lead.organization ?? "",
   email: lead.email ?? "",
+  phone: lead.phone ?? "",
   departureCity: lead.departureCity ?? "",
   arrivalCity: lead.arrivalCity ?? "",
   departureDate: lead.departureDate ?? "",
   returnDate: lead.returnDate ?? "",
   passengerCount: lead.passengerCount != null ? String(lead.passengerCount) : "",
   tripType: lead.tripType ?? "",
-  options: lead.options.join(", "),
+  hasIntermediateStop: Boolean(lead.hasIntermediateStop),
+  intermediateStops: (lead.intermediateStops ?? []).join(", "),
+  options: normalizeOptions(lead.options),
   status: lead.status as string,
   humanReviewReason: humanReviewReasonText(lead.humanReviewReason)
  });
@@ -50,23 +82,49 @@ export function LeadEditForm({ lead }: { lead: Lead }) {
   setState({ status: "idle" });
  }
 
+ function setTripType(value: string) {
+  if (value === "multi_stop") {
+   setForm((prev) => ({ ...prev, tripType: prev.tripType || "one_way", hasIntermediateStop: true }));
+  } else {
+   setForm((prev) => ({ ...prev, tripType: value, hasIntermediateStop: false, intermediateStops: "" }));
+  }
+  setState({ status: "idle" });
+ }
+
+ function toggleOption(code: string) {
+  setForm((prev) => {
+   const nextOptions = prev.options.includes(code)
+    ? prev.options.filter((option) => option !== code)
+    : [...prev.options, code];
+   return { ...prev, options: normalizeOptions(nextOptions) };
+  });
+  setState({ status: "idle" });
+ }
+
  async function handleSubmit(event: FormEvent) {
   event.preventDefault();
   setState({ status: "saving" });
 
   const patch = {
+   clientType: form.clientType.trim() || null,
+   contactName: form.contactName.trim() || null,
    organization: form.organization.trim() || null,
    email: form.email.trim() || null,
+   phone: form.phone.trim() || null,
    departureCity: form.departureCity.trim() || null,
    arrivalCity: form.arrivalCity.trim() || null,
    departureDate: form.departureDate.trim() || null,
    returnDate: form.returnDate.trim() || null,
    passengerCount: form.passengerCount.trim() ? Number(form.passengerCount) : null,
    tripType: form.tripType || null,
-   options: form.options
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean),
+   hasIntermediateStop: form.hasIntermediateStop,
+   intermediateStops: form.hasIntermediateStop
+    ? form.intermediateStops
+       .split(",")
+       .map((value) => value.trim())
+       .filter(Boolean)
+    : [],
+   options: form.options,
    status: form.status,
    humanReviewReason: form.humanReviewReason.trim() || null
   };
@@ -110,7 +168,23 @@ export function LeadEditForm({ lead }: { lead: Lead }) {
    ) : null}
 
    <form onSubmit={handleSubmit} className={styles.form}>
-    <div className={styles.grid}>
+   <div className={styles.grid}>
+     <label>
+      Type de client
+      <select value={form.clientType} onChange={(event) => set("clientType", event.target.value)}>
+       <option value="">A confirmer</option>
+       <option value="Particulier">Particulier</option>
+       <option value="Entreprise">Entreprise</option>
+       <option value="Association">Association</option>
+       <option value="Agence">Agence</option>
+       <option value="Ecole">Ecole</option>
+       <option value="Collectivite">Collectivite</option>
+      </select>
+     </label>
+     <label>
+      Nom du contact
+      <input value={form.contactName} onChange={(event) => set("contactName", event.target.value)} />
+     </label>
      <label>
       Organisation
       <input value={form.organization} onChange={(event) => set("organization", event.target.value)} />
@@ -118,6 +192,10 @@ export function LeadEditForm({ lead }: { lead: Lead }) {
      <label>
       Email
       <input type="email" value={form.email} onChange={(event) => set("email", event.target.value)} />
+     </label>
+     <label>
+      Telephone
+      <input type="tel" value={form.phone} onChange={(event) => set("phone", event.target.value)} />
      </label>
      <label>
       Ville de départ
@@ -146,20 +224,55 @@ export function LeadEditForm({ lead }: { lead: Lead }) {
      </label>
      <label>
       Type de trajet
-      <select value={form.tripType} onChange={(event) => set("tripType", event.target.value)}>
+      <select
+       value={form.hasIntermediateStop ? "multi_stop" : form.tripType}
+       onChange={(event) => setTripType(event.target.value)}
+      >
        <option value="">—</option>
        <option value="one_way">Aller simple</option>
        <option value="round_trip">Aller-retour</option>
+       <option value="multi_stop">Multi-destination / avec escale</option>
       </select>
      </label>
-     <label className={styles.full}>
-      Options (séparées par des virgules)
-      <input
-       value={form.options}
-       onChange={(event) => set("options", event.target.value)}
-       placeholder="peages, guide..."
-      />
-     </label>
+     <fieldset className={`${styles.full} ${styles.optionChoices}`}>
+      <legend>Escales</legend>
+      {form.hasIntermediateStop ? (
+       <label>
+        Villes intermediaires
+        <input
+         value={form.intermediateStops}
+         onChange={(event) => set("intermediateStops", event.target.value)}
+         placeholder="Ex. Lyon, Dijon"
+        />
+       </label>
+      ) : (
+       <span className={styles.fieldHelp}>Choisir "Multi-destination / avec escale" dans le type de trajet.</span>
+      )}
+      <span className={styles.fieldHelp}>Les trajets avec escale partent en reprise humaine avant devis.</span>
+     </fieldset>
+     <fieldset className={`${styles.full} ${styles.optionChoices}`}>
+      <legend>Options</legend>
+      <div className={styles.optionChoiceGrid}>
+       {OPTION_CHOICES.map((option) => (
+        <label className={styles.optionChoice} key={option.code}>
+         <input
+          type="checkbox"
+          checked={form.options.includes(option.code)}
+          onChange={() => toggleOption(option.code)}
+         />
+         <span>{option.label}</span>
+        </label>
+       ))}
+       {form.options
+        .filter((value) => !OPTION_CHOICES.some((option) => option.code === value))
+        .map((value) => (
+         <label className={styles.optionChoice} key={value}>
+          <input type="checkbox" checked onChange={() => toggleOption(value)} />
+          <span>Ancienne option : {value}</span>
+         </label>
+        ))}
+      </div>
+     </fieldset>
      <label>
       Statut
       <select value={form.status} onChange={(event) => set("status", event.target.value)}>

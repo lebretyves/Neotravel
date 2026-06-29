@@ -16,6 +16,7 @@ import { canonicalizeCity } from "../../../lib/ai/canonicalize-city";
 import { validateLead } from "../../../lib/ai/validate-lead";
 import { getChatModel } from "../../../lib/ai/provider";
 import { sanitizeExtractionDelta } from "../../../lib/ai/sanitize-extraction-delta";
+import { calculateQuoteForLead } from "../../../lib/quotes/quote-service";
 import { sendLeadStatusEmail } from "../../../features/emails/services/customerEmailService";
 
 export const runtime = "nodejs";
@@ -145,7 +146,7 @@ RÈGLES ABSOLUES :
 3. Message sans information de transport concrète → retourne {}.
 
 Retourne UNIQUEMENT un objet JSON valide (aucun markdown, aucun texte autour), avec seulement les champs présents dans ce message parmi :
-{"name":string,"organization":string,"email":string,"departure_city":string,"arrival_city":string,"departure_date":"YYYY-MM-DD","return_date":"YYYY-MM-DD","passenger_count":number,"trip_type":"one_way"|"round_trip"}
+{"name":string,"contact_name":string,"client_type":string,"organization":string,"email":string,"phone":string,"departure_city":string,"arrival_city":string,"departure_date":"YYYY-MM-DD","return_date":"YYYY-MM-DD","passenger_count":number,"trip_type":"one_way"|"round_trip"}
 
 Message : ${latestUserText}`,
         temperature: 0.1,
@@ -260,6 +261,9 @@ Message : ${latestUserText}`,
     );
 
     const extractedFields: ExtractedFields = {
+      clientType: lead.client_type ?? null,
+      contactName: lead.contact_name ?? lead.name ?? null,
+      organization: lead.organization ?? null,
       departureCity: lead.departure_city ?? null,
       arrivalCity: lead.arrival_city ?? null,
       departureDate: lead.departure_date ?? null,
@@ -267,6 +271,7 @@ Message : ${latestUserText}`,
       passengerCount: lead.passenger_count ?? null,
       tripType: (lead.trip_type ?? null) as "one_way" | "round_trip" | null,
       email: lead.email ?? null,
+      phone: lead.phone ?? null,
       options: detectedOptionCodes(lead.options),
       multiDestination: Boolean(lead.has_intermediate_stop),
       stops: lead.intermediate_stops ?? [],
@@ -362,8 +367,7 @@ Message : ${latestUserText}`,
       });
     }
 
-    // All required fields collected — return QUALIFIED so the front-end enables the quote button.
-    // Quote calculation is intentionally left to the dedicated /api/quotes route (triggered by the user).
+    // All required fields collected: continue automatically to deterministic quote generation.
     const qualifiedSummary = [
       lead.departure_city && lead.arrival_city ? `${lead.departure_city} → ${lead.arrival_city}` : null,
       lead.departure_date ? `le ${lead.departure_date}` : null,
@@ -373,7 +377,31 @@ Message : ${latestUserText}`,
       .filter(Boolean)
       .join(", ");
 
-    const qualifiedFallback = `Parfait, j'ai toutes les informations pour votre trajet (${qualifiedSummary}). Cliquez sur "Recevoir mon devis" pour obtenir votre estimation.`;
+    const quoteResult = await calculateQuoteForLead(leadResult.leadId);
+
+    if (!quoteResult.ok) {
+      logAgentEvent(
+        requestId,
+        "request_completed",
+        { status: quoteResult.status, reason: quoteResult.reason, leadId: leadResult.leadId },
+        startedAt,
+      );
+
+      return chatJson({
+        status: quoteResult.status,
+        message:
+          quoteResult.status === "HUMAN_REVIEW"
+            ? formatHumanReviewMessage(quoteResult.reason)
+            : "Votre demande contient assez d'informations, mais un point doit etre corrige avant de generer le devis.",
+        leadId: leadResult.leadId,
+        missingFields: quoteResult.status === "INCOMPLETE" ? missing.missing_fields : undefined,
+        reviewReason: quoteResult.status === "HUMAN_REVIEW" ? quoteResult.reason : undefined,
+        extractedFields,
+        warnings,
+      });
+    }
+
+    const qualifiedFallback = `Parfait, j'ai toutes les informations pour votre trajet (${qualifiedSummary}). Votre devis est pret.`;
     const qualifiedMessage = await generateAssistantReply(
       {
         status: "QUALIFIED",
@@ -389,14 +417,16 @@ Message : ${latestUserText}`,
     logAgentEvent(
       requestId,
       "request_completed",
-      { status: "QUALIFIED", leadId: leadResult.leadId },
+      { status: "QUOTE_READY", leadId: leadResult.leadId, quoteId: quoteResult.quoteId },
       startedAt,
     );
 
     return chatJson({
-      status: "QUALIFIED",
+      status: "QUOTE_READY",
       message: qualifiedMessage,
       leadId: leadResult.leadId,
+      quoteId: quoteResult.quoteId,
+      quote: quoteResult.quote,
       extractedFields,
     });
   } catch (error) {
@@ -500,7 +530,6 @@ function detectedOptionCodes(options: Record<string, unknown> | undefined | null
   const codes: string[] = [];
   if (options.guide || options.guideDays) codes.push("guide");
   if (options.driverOvernight || options.driver_overnight || options.driverNights) codes.push("driver_overnight");
-  if (options.tolls || options.tollsIncluded || options.tollPackageEur) codes.push("tolls");
   return codes;
 }
 
@@ -635,8 +664,11 @@ function extractLeadIdFromBody(body: unknown): string | undefined {
 
 const USABLE_LEAD_FIELDS = [
   "name",
+  "contact_name",
+  "client_type",
   "organization",
   "email",
+  "phone",
   "departure_city",
   "arrival_city",
   "departure_date",

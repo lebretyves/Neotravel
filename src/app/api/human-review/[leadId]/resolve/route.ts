@@ -29,7 +29,17 @@ export async function POST(
   if (notes) update.human_review_notes = notes;
 
   const { error } = await supabase.from("leads").update(update).eq("id", leadId);
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) {
+    if (!notes || !isMissingColumnError(error)) {
+      return Response.json({ error: error.message }, { status: 500 });
+    }
+
+    const fallback = await supabase
+      .from("leads")
+      .update({ status: targetStatus })
+      .eq("id", leadId);
+    if (fallback.error) return Response.json({ error: fallback.error.message }, { status: 500 });
+  }
 
   await logAuditEvent({
     entityType: "lead",
@@ -39,4 +49,8 @@ export async function POST(
   });
 
   return Response.json({ leadId, status: targetStatus });
+}
+
+function isMissingColumnError(error: { code?: string; message?: string }) {
+  return error.code === "42703" || /column .* does not exist/i.test(error.message ?? "");
 }

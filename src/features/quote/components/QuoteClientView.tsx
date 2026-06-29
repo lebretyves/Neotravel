@@ -210,7 +210,7 @@ export async function QuoteClientView({ quoteId }: { quoteId: string }) {
                     <span>
                       {option.amountEur && option.amountEur > 0
                         ? formatEuro(option.amountEur)
-                        : `${option.note ?? "À confirmer"} — 0 € placeholder MVP`}
+                        : `${option.note ?? "À confirmer"} — 0 € (placeholder)`}
                     </span>
                   </div>
                 ))}

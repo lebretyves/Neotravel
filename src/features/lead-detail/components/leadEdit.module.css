@@ -106,6 +106,78 @@
  resize: vertical;
 }
 
+.optionsSelect {
+ min-height: 116px;
+ padding: 8px 10px;
+}
+
+.optionsSelect option {
+ padding: 7px 8px;
+ border-radius: 6px;
+}
+
+.fieldHelp {
+ color: #6b7890;
+ font-size: 11px;
+ font-weight: 700;
+}
+
+.optionChoices {
+ display: grid;
+ gap: 8px;
+ margin: 0;
+ border: 0;
+ padding: 0;
+}
+
+.optionChoices legend {
+ margin: 0 0 2px;
+ color: #475467;
+ font-size: 12px;
+ font-weight: 800;
+}
+
+.optionChoiceGrid {
+ display: grid;
+ grid-template-columns: repeat(3, minmax(0, 1fr));
+ gap: 10px;
+}
+
+.optionChoice {
+ display: flex !important;
+ min-height: 42px;
+ align-items: center;
+ gap: 9px !important;
+ border: 1px solid #d9e2ed;
+ border-radius: 8px;
+ padding: 0 12px;
+ color: #17202e !important;
+ background: #f8fafd;
+ cursor: pointer;
+ transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.optionChoice:has(input:checked) {
+ border-color: #123885;
+ background: #eef5ff;
+ box-shadow: 0 0 0 3px rgba(18, 56, 133, 0.08);
+}
+
+.optionChoice input {
+ width: 16px;
+ height: 16px;
+ min-height: 16px;
+ flex: 0 0 auto;
+ border: 0;
+ padding: 0;
+ accent-color: #123885;
+}
+
+.optionChoice span {
+ font-size: 13px;
+ font-weight: 800;
+}
+
 .grid input:focus-visible,
 .grid select:focus-visible,
 .grid textarea:focus-visible {
@@ -177,6 +249,10 @@
 
 @media (max-width: 720px) {
  .grid {
+  grid-template-columns: 1fr;
+ }
+
+ .optionChoiceGrid {
   grid-template-columns: 1fr;
  }
 }

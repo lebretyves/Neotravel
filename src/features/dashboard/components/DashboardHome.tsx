@@ -28,8 +28,6 @@ type NextAction = {
  priority: number;
 };
 
-const QUOTEABLE_STATUSES = new Set<LeadStatus>(["QUALIFIED", "HIGH_VALUE"]);
-
 function formatDateTime(value: string | null | undefined) {
  if (!value) return "—";
  return new Intl.DateTimeFormat("fr-FR", {
@@ -76,7 +74,7 @@ function buildNextActions(leads: Lead[], quotes: Quote[], followups: Parameters<
    status: "SCHEDULED",
    what: dueAt < now ? "Relance en retard" : `Relance prévue le ${formatCommercialDate(followup.dueAt)}`,
    cta: "Relancer",
-   href: `/dashboard/demandes/${followup.leadId}`,
+   href: `/dashboard/relances/${followup.id}`,
    priority: dueAt < now ? 0 : 5
   });
  }
@@ -104,7 +102,6 @@ export async function DashboardHome() {
  const quoteVolume = quotes.reduce((sum, quote) => sum + quoteTotal(quote), 0);
  const humanReviewCount = countByStatus(leads, ["HUMAN_REVIEW"]);
  const incompleteCount = countByStatus(leads, ["INCOMPLETE"]);
- const quoteableCount = leads.filter((lead) => QUOTEABLE_STATUSES.has(lead.status) && !quoteByLeadId.has(lead.id)).length;
  const quoteReadyCount = quotes.filter((quote) => quote.status === "QUOTE_READY").length;
  const pipelineGroups = [
   {
@@ -118,12 +115,6 @@ export async function DashboardHome() {
    value: humanReviewCount,
    href: "/dashboard/human-review",
    hint: "Reprise humaine"
-  },
-  {
-   label: "À deviser",
-   value: quoteableCount,
-   href: "/dashboard/demandes?status=qualified",
-   hint: "Qualifiées sans devis"
   },
   {
    label: "Devis prêts",
@@ -181,10 +172,10 @@ export async function DashboardHome() {
       <strong>{humanReviewCount}</strong>
       <small>Dossiers bloquants</small>
      </Link>
-     <Link className={styles.healthCard} href="/dashboard/demandes?status=qualified">
-      <span>Devis à générer</span>
-      <strong>{quoteableCount}</strong>
-      <small>Demandes qualifiées</small>
+     <Link className={styles.healthCard} href="/dashboard/demandes">
+      <span>À compléter</span>
+      <strong>{incompleteCount}</strong>
+      <small>Demandes incomplètes</small>
      </Link>
      <Link className={styles.healthCard} href="/dashboard/relances?status=overdue" data-tone={overdueFollowups.length > 0 ? "warning" : "neutral"}>
       <span>Relances en retard</span>

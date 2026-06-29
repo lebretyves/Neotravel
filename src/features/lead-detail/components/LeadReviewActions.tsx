@@ -39,7 +39,7 @@ export function LeadReviewActions({ lead }: { lead: Lead }) {
  }
 
  return (
-  <section className={styles.card} aria-label="Décision humaine">
+  <section id="human-review-actions" className={styles.card} aria-label="Décision humaine">
    <div className={styles.copy}>
     <p className={styles.kicker}>Revue humaine</p>
     <h2>Votre décision sur cette demande</h2>

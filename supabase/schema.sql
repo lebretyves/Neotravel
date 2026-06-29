@@ -5,12 +5,15 @@ create table if not exists clients (
   name text,
   organization text,
   email text not null,
+  contact_name text,
+  phone text,
   created_at timestamptz not null default now()
 );
 
 create table if not exists leads (
   id uuid primary key default gen_random_uuid(),
   client_id uuid references clients(id) on delete set null,
+  client_type text,
   departure_city text,
   arrival_city text,
   departure_date date,
@@ -33,10 +36,13 @@ create table if not exists leads (
       'NEW',
       'INCOMPLETE',
       'QUALIFIED',
+      'HIGH_VALUE',
       'HUMAN_REVIEW',
       'QUOTE_READY',
       'QUOTE_SENT',
       'FOLLOWUP_SCHEDULED',
+      'FOLLOWUP_1',
+      'FOLLOWUP_2',
       'WON',
       'LOST',
       'CLOSED'

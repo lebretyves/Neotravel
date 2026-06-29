@@ -43,7 +43,7 @@ export async function getAgendaEvents(): Promise<AgendaEvent[]> {
       type: "relance",
       title: followup.status === "SENT" ? "Relance envoyée" : "Relance prévue",
       subtitle: lead?.organization ?? followup.leadId,
-      href: `/dashboard/demandes/${followup.leadId}`
+      href: `/dashboard/relances/${followup.id}`
     });
   }
 

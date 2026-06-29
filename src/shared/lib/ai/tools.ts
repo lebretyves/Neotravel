@@ -12,8 +12,11 @@ import type { DemandDraft } from "@/shared/types/lead";
 const DemandToolSchema = z.object({
   id: z.string().optional(),
   rawMessage: z.string().optional(),
+  clientType: z.string().nullable().optional(),
+  contactName: z.string().nullable().optional(),
   organization: z.string().nullable(),
   email: z.string().email().nullable(),
+  phone: z.string().nullable().optional(),
   departureCity: z.string().nullable(),
   arrivalCity: z.string().nullable(),
   departureDate: z.string().nullable(),
@@ -59,8 +62,11 @@ async function logToolCall(toolName: string, input: unknown, output: unknown, st
 function toDemandDraft(input: DemandToolInput): DemandDraft {
   return {
     rawMessage: input.rawMessage,
+    clientType: input.clientType ?? null,
+    contactName: input.contactName ?? null,
     organization: input.organization,
     email: input.email,
+    phone: input.phone ?? null,
     departureCity: input.departureCity,
     arrivalCity: input.arrivalCity,
     departureDate: input.departureDate,

@@ -1,6 +1,7 @@
 import type { Followup } from "@/shared/types/followup";
 import type { Lead } from "@/shared/types/lead";
 import type { Quote } from "@/shared/types/quote";
+import { humanReviewReasonLabel } from "@/features/human-review/reasonLabels";
 
 export type LeadCommercialAction = {
  label: string;
@@ -78,9 +79,9 @@ export function getLeadCommercialAction({
  if (lead.status === "HUMAN_REVIEW") {
   return {
    label: "Reprendre manuellement",
-   detail: lead.humanReviewReason ? `Motif : ${lead.humanReviewReason}` : "Décision commerciale requise avant devis.",
-   cta: "Traiter",
-   href: leadHref,
+   detail: `Motif : ${humanReviewReasonLabel(lead.humanReviewReason)}`,
+   cta: "Décider",
+   href: `${leadHref}#human-review-actions`,
    priority: 0,
    tone: "critical"
   };
@@ -110,12 +111,12 @@ export function getLeadCommercialAction({
 
  if ((lead.status === "QUALIFIED" || lead.status === "HIGH_VALUE") && !quote) {
   return {
-   label: "Générer devis",
-   detail: "Demande qualifiée sans proposition existante.",
-   cta: "Générer",
+   label: "Automatisation a reprendre",
+   detail: "Demande qualifiee sans devis : le flux attendu est devis auto ou validation humaine.",
+   cta: "Verifier",
    href: leadHref,
-   priority: 3,
-   tone: "info"
+   priority: 0,
+   tone: "critical"
   };
  }
 
@@ -135,7 +136,7 @@ export function getLeadCommercialAction({
    label: followup ? "Relance programmée" : "Attendre réponse / relancer",
    detail: followup ? `Prochaine relance : ${formatCommercialDate(followup.dueAt)}.` : "Devis envoyé, aucune relance active détectée.",
    cta: "Suivre",
-   href: leadHref,
+   href: followup ? `/dashboard/relances/${followup.id}` : leadHref,
    priority: followupDueAt !== null && followupDueAt < now ? 0 : 5,
    tone: followupDueAt !== null && followupDueAt < now ? "warning" : "info"
   };
@@ -146,7 +147,7 @@ export function getLeadCommercialAction({
    label: followupDueAt !== null && followupDueAt < now ? "Relance en retard" : "Relance programmée",
    detail: followup ? `Échéance : ${formatCommercialDate(followup.dueAt)}.` : "Suivi commercial en cours.",
    cta: "Suivre",
-   href: leadHref,
+   href: followup ? `/dashboard/relances/${followup.id}` : leadHref,
    priority: followupDueAt !== null && followupDueAt < now ? 0 : 6,
    tone: followupDueAt !== null && followupDueAt < now ? "warning" : "info"
   };

@@ -108,7 +108,7 @@ values (
   null,
   42,
   'one_way',
-  '{"tollsIncluded": true}'::jsonb,
+  '{}'::jsonb,
   'Sortie scolaire de démonstration.',
   'QUALIFIED',
   '{}'::text[]

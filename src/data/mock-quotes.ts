@@ -69,6 +69,8 @@ export const mockQuotes: Quote[] = [
     id: "demo-quote-alpha",
     leadId: "demo-lead-alpha",
     status: "QUOTE_SENT",
+    createdAt: "2026-01-08T10:18:00.000Z",
+    updatedAt: "2026-01-08T10:42:00.000Z",
     calculation: createCalculation({
       quoteNumber: "NT-DEMO-ALPHA",
       routeLabel: "Paris -> Lyon",
@@ -82,6 +84,8 @@ export const mockQuotes: Quote[] = [
     id: "demo-quote-urgent",
     leadId: "demo-lead-urgent-treatable",
     status: "QUOTE_SENT",
+    createdAt: "2026-03-11T09:28:00.000Z",
+    updatedAt: "2026-03-11T09:55:00.000Z",
     calculation: createCalculation({
       quoteNumber: "NT-DEMO-URGENT",
       routeLabel: "Paris -> Lille",
@@ -94,6 +98,8 @@ export const mockQuotes: Quote[] = [
     id: "demo-quote-accepted",
     leadId: "demo-lead-accepted",
     status: "ACCEPTED",
+    createdAt: "2026-05-09T11:05:00.000Z",
+    updatedAt: "2026-05-10T15:10:00.000Z",
     calculation: createCalculation({
       quoteNumber: "NT-DEMO-WON",
       routeLabel: "Lyon -> Marseille",
@@ -107,6 +113,8 @@ export const mockQuotes: Quote[] = [
     id: "demo-quote-no-response",
     leadId: "demo-lead-no-response",
     status: "QUOTE_SENT",
+    createdAt: "2026-05-17T10:30:00.000Z",
+    updatedAt: "2026-05-17T10:50:00.000Z",
     calculation: createCalculation({
       quoteNumber: "NT-DEMO-NO-RESPONSE",
       routeLabel: "Paris -> Lille",
@@ -119,6 +127,8 @@ export const mockQuotes: Quote[] = [
     id: "demo-quote-refused",
     leadId: "demo-lead-refused",
     status: "REFUSED",
+    createdAt: "2026-06-04T16:00:00.000Z",
+    updatedAt: "2026-06-06T09:20:00.000Z",
     calculation: createCalculation({
       quoteNumber: "NT-DEMO-LOST",
       routeLabel: "Nantes -> Bordeaux",

@@ -36,7 +36,7 @@ export default function ConfidentialitePage() {
         <p data-i18n-key="Conformément à la réglementation applicable en matière de protection des données, vous disposez d’un droit d’accès, de rectification, d’opposition, de limitation et de suppression des données personnelles vous concernant.">
           Conformément à la réglementation applicable en matière de protection des données, vous disposez d’un droit
           d’accès, de rectification, d’opposition, de limitation et de suppression des données personnelles vous
-          concernant.
+          concernant. Pour cela veuillez contacter neotravel@gmail.com
         </p>
         <p data-i18n-key="Vous pouvez exercer ces droits en contactant NeoTravel à l’adresse prévue à cet effet. Toute demande sera étudiée dans les meilleurs délais, sous réserve des obligations légales ou contractuelles pouvant imposer la conservation de certaines informations.">
           Vous pouvez exercer ces droits en contactant NeoTravel à l’adresse prévue à cet effet. Toute demande sera

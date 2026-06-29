@@ -11,13 +11,18 @@ export const runtime = "nodejs";
 
 const SyncInputSchema = z.object({
   leadId: z.string().uuid().optional(),
+  clientType: z.string().trim().min(1).optional().nullable(),
+  contactName: z.string().trim().min(1).optional().nullable(),
   email: z.string().trim().email().optional().nullable(),
+  phone: z.string().trim().min(1).optional().nullable(),
   departureCity: z.string().trim().min(1).optional().nullable(),
   arrivalCity: z.string().trim().min(1).optional().nullable(),
   departureDate: z.string().trim().min(1).optional().nullable(),
   returnDate: z.string().trim().min(1).optional().nullable(),
   passengerCount: z.number().int().optional().nullable(),
   tripType: z.enum(["one_way", "round_trip"]).optional().nullable(),
+  hasIntermediateStop: z.boolean().optional(),
+  intermediateStops: z.array(z.string().trim().min(1)).optional(),
   options: z.array(z.string()).optional(),
 });
 
@@ -38,13 +43,19 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const incoming = {
+      client_type: body.clientType ?? undefined,
+      contact_name: body.contactName ?? undefined,
+      name: body.contactName ?? undefined,
       email: body.email ?? undefined,
+      phone: body.phone ?? undefined,
       departure_city: body.departureCity ?? undefined,
       arrival_city: body.arrivalCity ?? undefined,
       departure_date: body.departureDate ?? undefined,
       return_date: body.returnDate ?? undefined,
       passenger_count: body.passengerCount ?? undefined,
       trip_type: body.tripType ?? undefined,
+      has_intermediate_stop: body.hasIntermediateStop,
+      intermediate_stops: body.intermediateStops,
       options: body.options
         ? Object.fromEntries(body.options.map((option) => [option, true]))
         : undefined,

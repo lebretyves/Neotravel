@@ -1,8 +1,10 @@
+import Link from "next/link";
 import { LeadHeader } from "@/features/lead-detail/components/LeadHeader";
 import { LeadEditForm } from "@/features/lead-detail/components/LeadEditForm";
 import { LeadMessages } from "@/features/lead-detail/components/LeadMessages";
 import { LeadQuotePanel } from "@/features/lead-detail/components/LeadQuotePanel";
 import { LeadReviewActions } from "@/features/lead-detail/components/LeadReviewActions";
+import { LeadArchiveAction } from "@/features/lead-detail/components/LeadArchiveAction";
 import { LeadProcessFlow } from "@/features/lead-pipeline/components/LeadProcessFlow";
 import { LeadActivityTimeline } from "@/features/lead-pipeline/components/LeadActivityTimeline";
 import { getLeadDetail } from "@/features/lead-detail/services/getLeadDetail";
@@ -22,6 +24,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
     <section className={styles.card}>
      <h1>Demande introuvable</h1>
      <p>Aucune demande ne correspond à cet identifiant.</p>
+     <div className={styles.cardActions}>
+      <Link className={styles.secondary} href="/dashboard/demandes">
+       Retour aux demandes
+      </Link>
+     </div>
     </section>
    </main>
   );
@@ -35,6 +42,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
    <LeadHeader lead={lead} quote={quote} followup={followup} />
    <LeadProcessFlow lead={lead} />
    <LeadReviewActions lead={lead} />
+   <LeadArchiveAction lead={lead} />
    <LeadEditForm lead={lead} />
    <div className={styles.grid}>
     <LeadMessages lead={lead} />

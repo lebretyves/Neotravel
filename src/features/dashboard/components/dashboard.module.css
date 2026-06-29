@@ -351,6 +351,7 @@
 }
 
 .searchBox {
+ position: relative;
  display: inline-flex;
  align-items: center;
  gap: 8px;
@@ -407,6 +408,58 @@
 .searchClear:hover {
  color: #17202e;
  background: #eef2f7;
+}
+
+.searchResults {
+ position: absolute;
+ z-index: 30;
+ top: calc(100% + 8px);
+ right: 0;
+ display: grid;
+ width: min(440px, 92vw);
+ max-height: 280px;
+ overflow-y: auto;
+ border: 1px solid #d9e2ed;
+ border-radius: 8px;
+ padding: 6px;
+ background: #ffffff;
+ box-shadow: 0 18px 42px -24px rgba(5, 13, 31, 0.38);
+}
+
+.searchResults a {
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ gap: 12px;
+ border-radius: 7px;
+ padding: 9px 10px;
+ color: #17202e;
+ font-size: 12px;
+ font-weight: 800;
+ text-align: left;
+ transition: background 0.14s ease, color 0.14s ease;
+}
+
+.searchResults a:hover,
+.searchResults a:focus-visible {
+ color: #123885;
+ background: #eef5ff;
+ outline: none;
+}
+
+.searchResults a span {
+ min-width: 0;
+ overflow: hidden;
+ text-overflow: ellipsis;
+ white-space: nowrap;
+}
+
+.searchResults a strong {
+ flex: 0 0 auto;
+ color: #123885;
+ font-size: 10px;
+ font-weight: 900;
+ text-transform: uppercase;
 }
 
 .primary,
@@ -501,7 +554,9 @@
  border: 1px solid #e3e9f1;
  border-radius: 14px;
  padding: 16px 18px;
+ color: inherit;
  background: linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+ text-decoration: none;
  animation: dashRise 0.42s ease both;
  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
@@ -553,6 +608,154 @@
  font-size: 27px;
  line-height: 1;
  letter-spacing: -0.01em;
+}
+
+.conversionLineChart {
+ position: relative;
+ --chart-color: #0b8554;
+ min-height: 290px;
+ padding: 26px 14px 48px;
+ border: 1px solid #e3e9f1;
+ border-radius: 10px;
+ background:
+  linear-gradient(180deg, rgba(238, 244, 252, 0.82) 1px, transparent 1px) 0 28px / 100% 46px,
+  linear-gradient(180deg, #ffffff 0%, #fbfcfe 100%);
+}
+
+.conversionLineChart svg {
+ position: absolute;
+ inset: 26px 14px 48px;
+ width: calc(100% - 28px);
+ height: calc(100% - 74px);
+ overflow: visible;
+}
+
+.conversionLineChart polyline {
+ fill: none;
+ stroke: var(--chart-color);
+ stroke-linecap: round;
+ stroke-linejoin: round;
+ stroke-width: 3;
+ vector-effect: non-scaling-stroke;
+}
+
+.conversionLinePoints {
+ position: absolute;
+ inset: 26px 14px 48px;
+}
+
+.conversionLinePoint {
+ position: absolute;
+ display: grid;
+ justify-items: center;
+ min-width: 54px;
+ transform: translate(-50%, -50%);
+ gap: 3px;
+}
+
+.conversionLinePoint::before {
+ content: "";
+ width: 12px;
+ height: 12px;
+ border: 3px solid #ffffff;
+ border-radius: 50%;
+ background: var(--chart-color);
+ box-shadow: 0 4px 14px color-mix(in srgb, var(--chart-color) 28%, transparent);
+}
+
+.conversionLinePoint strong {
+ color: var(--chart-color);
+ font-size: 12px;
+ line-height: 1;
+}
+
+.conversionLineChart[data-tone="blue"] {
+ --chart-color: #123885;
+}
+
+.conversionLinePoint small {
+ color: #52627a;
+ font-size: 10px;
+ font-weight: 800;
+}
+
+.conversionLineLabels {
+ position: absolute;
+ left: 14px;
+ right: 14px;
+ bottom: 14px;
+ display: grid;
+ grid-template-columns: repeat(12, minmax(0, 1fr));
+ gap: 8px;
+ color: #6b7890;
+ font-size: 10px;
+ font-weight: 900;
+ letter-spacing: 0.04em;
+ text-align: center;
+ text-transform: uppercase;
+}
+
+.aiManagedBox {
+ display: grid;
+ grid-template-columns: minmax(220px, 0.75fr) minmax(0, 1fr);
+ gap: 16px;
+ align-items: stretch;
+}
+
+.aiManagedMain {
+ display: grid;
+ align-content: center;
+ gap: 9px;
+ min-height: 170px;
+ border: 1px solid #d9e8de;
+ border-radius: 10px;
+ padding: 22px;
+ background: linear-gradient(180deg, #f7fcf9 0%, #ffffff 100%);
+}
+
+.aiManagedMain span,
+.aiManagedSplit span {
+ color: #52627a;
+ font-size: 10px;
+ font-weight: 900;
+ letter-spacing: 0.04em;
+ text-transform: uppercase;
+}
+
+.aiManagedMain strong {
+ color: #0b8554;
+ font-size: 42px;
+ line-height: 1;
+}
+
+.aiManagedMain small {
+ color: #52627a;
+ font-size: 12px;
+ font-weight: 800;
+}
+
+.aiManagedSplit {
+ display: grid;
+ grid-template-columns: repeat(4, minmax(0, 1fr));
+ gap: 12px;
+}
+
+.aiManagedSplit span {
+ display: grid;
+ align-content: center;
+ justify-items: center;
+ gap: 8px;
+ min-height: 170px;
+ border: 1px solid #e3e9f1;
+ border-radius: 10px;
+ background: #fbfcfe;
+ text-align: center;
+}
+
+.aiManagedSplit strong {
+ color: #123885;
+ font-size: 28px;
+ line-height: 1;
 }
 
 .grid {

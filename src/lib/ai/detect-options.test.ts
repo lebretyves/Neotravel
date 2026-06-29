@@ -18,8 +18,8 @@ describe("detectOptions", () => {
     expect(detectOptions("Je veux être guidé dans la démarche.")).toEqual({});
   });
 
-  it("detects péages", () => {
-    expect(detectOptions("Est-ce que les péages sont inclus ?")).toEqual({ tolls: true });
+  it("does NOT expose péages as a selectable option", () => {
+    expect(detectOptions("Est-ce que les péages sont inclus ?")).toEqual({});
   });
 
   it("detects an explicit driver overnight request", () => {
@@ -45,7 +45,6 @@ describe("detectOptions", () => {
   it("detects multiple options at once", () => {
     expect(detectOptions("Un guide, les péages inclus, et une nuit pour le chauffeur.")).toEqual({
       guide: true,
-      tolls: true,
       driver_overnight: true,
     });
   });

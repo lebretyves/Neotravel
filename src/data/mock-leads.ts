@@ -13,9 +13,12 @@ export const mockLeads: Lead[] = [
     returnDate: null,
     passengerCount: 42,
     tripType: "one_way",
-    options: ["peages"],
+    options: [],
     missingFields: [],
     confidence: 0.97,
+    createdAt: "2026-01-08T09:12:00.000Z",
+    qualifiedAt: "2026-01-08T10:05:00.000Z",
+    updatedAt: "2026-01-08T10:42:00.000Z",
     aiSummary: "Demande complete qualifiee, devis genere puis envoye, relance standard planifiee."
   },
   {
@@ -33,6 +36,8 @@ export const mockLeads: Lead[] = [
     options: [],
     missingFields: ["organization", "email", "departureCity", "departureDate", "passengerCount", "tripType"],
     confidence: 0.42,
+    createdAt: "2026-02-03T14:20:00.000Z",
+    updatedAt: "2026-02-03T14:25:00.000Z",
     aiSummary: "Demande insuffisante : plusieurs champs obligatoires manquent, aucun devis automatique."
   },
   {
@@ -50,6 +55,9 @@ export const mockLeads: Lead[] = [
     options: [],
     missingFields: [],
     confidence: 0.93,
+    createdAt: "2026-03-11T08:35:00.000Z",
+    qualifiedAt: "2026-03-11T09:10:00.000Z",
+    updatedAt: "2026-03-11T09:55:00.000Z",
     aiSummary: "Urgence traitable : route connue, devis envoye, relance J+2."
   },
   {
@@ -68,6 +76,8 @@ export const mockLeads: Lead[] = [
     missingFields: [],
     confidence: 0.88,
     humanReviewReason: "Depart trop proche : validation humaine obligatoire avant engagement.",
+    createdAt: "2026-04-02T16:30:00.000Z",
+    updatedAt: "2026-04-02T16:35:00.000Z",
     aiSummary: "Depart demain matin, capacite importante : reprise humaine."
   },
   {
@@ -86,6 +96,8 @@ export const mockLeads: Lead[] = [
     missingFields: [],
     confidence: 0.91,
     humanReviewReason: "95 passagers : capacite limite, possible multi-autocars hors automatisme MVP.",
+    createdAt: "2026-04-12T11:05:00.000Z",
+    updatedAt: "2026-04-12T11:12:00.000Z",
     aiSummary: "Cas capacite elevee, reprise humaine."
   },
   {
@@ -104,6 +116,8 @@ export const mockLeads: Lead[] = [
     missingFields: [],
     confidence: 0.82,
     humanReviewReason: "Prompt injection detectee : remise automatique refusee.",
+    createdAt: "2026-05-01T13:40:00.000Z",
+    updatedAt: "2026-05-01T13:43:00.000Z",
     aiSummary: "Garde-fou declenche, pas de prix calcule par l'IA."
   },
   {
@@ -121,6 +135,9 @@ export const mockLeads: Lead[] = [
     options: ["guide"],
     missingFields: [],
     confidence: 0.95,
+    createdAt: "2026-05-09T10:00:00.000Z",
+    qualifiedAt: "2026-05-09T10:42:00.000Z",
+    updatedAt: "2026-05-10T15:10:00.000Z",
     aiSummary: "Client a accepte le devis : statut commercial gagne."
   },
   {
@@ -139,6 +156,9 @@ export const mockLeads: Lead[] = [
     missingFields: [],
     confidence: 0.94,
     humanReviewReason: null,
+    createdAt: "2026-05-17T09:25:00.000Z",
+    qualifiedAt: "2026-05-17T10:00:00.000Z",
+    updatedAt: "2026-05-31T10:00:00.000Z",
     aiSummary: "Devis sans reponse : relance J+3 envoyee, relance J+7 envoyee, cloture sans suite a J+14."
   },
   {
@@ -156,6 +176,9 @@ export const mockLeads: Lead[] = [
     options: [],
     missingFields: [],
     confidence: 0.94,
+    createdAt: "2026-06-04T15:05:00.000Z",
+    qualifiedAt: "2026-06-04T15:38:00.000Z",
+    updatedAt: "2026-06-06T09:20:00.000Z",
     aiSummary: "Client a refusé le devis : statut commercial perdu."
   },
   {
@@ -174,6 +197,8 @@ export const mockLeads: Lead[] = [
     missingFields: [],
     confidence: 0.9,
     humanReviewReason: "Modification client et remise exceptionnelle : reprise commerciale, pas de recalcul UI.",
+    createdAt: "2026-06-12T12:15:00.000Z",
+    updatedAt: "2026-06-12T12:22:00.000Z",
     aiSummary: "Demande de modification transmise au commercial."
   }
 ];

@@ -124,6 +124,36 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function hydrateStoredDemoTimeline() {
+  const leadFixtureById = new Map(mockLeads.map((lead) => [lead.id, lead]));
+  const quoteFixtureById = new Map(mockQuotes.map((quote) => [quote.id, quote]));
+
+  store.leads = store.leads.map((lead) => {
+    const fixture = leadFixtureById.get(lead.id);
+    if (!fixture) return lead;
+      return {
+        ...lead,
+      hasIntermediateStop: lead.hasIntermediateStop ?? fixture.hasIntermediateStop ?? false,
+      intermediateStops: lead.intermediateStops ?? fixture.intermediateStops ?? [],
+        createdAt: lead.createdAt ?? fixture.createdAt ?? null,
+      updatedAt: lead.updatedAt ?? fixture.updatedAt ?? null,
+      qualifiedAt: lead.qualifiedAt ?? fixture.qualifiedAt ?? null
+    };
+  });
+
+  store.quotes = store.quotes.map((quote) => {
+    const fixture = quoteFixtureById.get(quote.id);
+    if (!fixture) return quote;
+    return {
+      ...quote,
+      createdAt: quote.createdAt ?? fixture.createdAt ?? null,
+      updatedAt: quote.updatedAt ?? fixture.updatedAt ?? null
+    };
+  });
+}
+
+hydrateStoredDemoTimeline();
+
 function routeKeyToCities(routeKey: string) {
   const [departureCity, arrivalCity] = routeKey.split("__").map((part) => part.slice(0, 1).toUpperCase() + part.slice(1));
   return { departureCity, arrivalCity };
@@ -149,23 +179,32 @@ export const demoStore = {
   },
 
   createLead(input: Partial<Lead>) {
+    const createdAt = input.createdAt ?? nowIso();
     const lead: Lead = {
       id: input.id ?? crypto.randomUUID(),
       status: (input.status ?? "NEW") as LeadStatus,
       rawMessage: input.rawMessage,
+      clientType: input.clientType ?? null,
+      contactName: input.contactName ?? null,
       organization: input.organization ?? null,
       email: input.email ?? null,
+      phone: input.phone ?? null,
       departureCity: input.departureCity ?? null,
       arrivalCity: input.arrivalCity ?? null,
       departureDate: input.departureDate ?? null,
       returnDate: input.returnDate ?? null,
       passengerCount: input.passengerCount ?? null,
       tripType: input.tripType ?? null,
+      hasIntermediateStop: input.hasIntermediateStop ?? false,
+      intermediateStops: input.intermediateStops ?? [],
       options: input.options ?? [],
       missingFields: input.missingFields ?? [],
       confidence: input.confidence ?? null,
       humanReviewReason: input.humanReviewReason ?? null,
-      aiSummary: input.aiSummary ?? null
+      aiSummary: input.aiSummary ?? null,
+      createdAt,
+      updatedAt: input.updatedAt ?? createdAt,
+      qualifiedAt: input.qualifiedAt ?? null
     };
     store.leads.unshift(lead);
     return lead;
@@ -186,12 +225,15 @@ export const demoStore = {
     return store.leads;
   },
 
-  createQuote(input: { leadId: string; calculation: QuoteCalculation; status?: Quote["status"] }) {
+  createQuote(input: { leadId: string; calculation: QuoteCalculation; status?: Quote["status"]; createdAt?: string | null; updatedAt?: string | null }) {
+    const createdAt = input.createdAt ?? nowIso();
     const quote: Quote = {
       id: crypto.randomUUID(),
       leadId: input.leadId,
       status: input.status ?? "QUOTE_READY",
-      calculation: input.calculation
+      calculation: input.calculation,
+      createdAt,
+      updatedAt: input.updatedAt ?? createdAt
     };
     store.quotes.unshift(quote);
     return quote;

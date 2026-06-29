@@ -23,14 +23,19 @@ const LeadStatusValues = [
 
 const LeadPatchSchema = z
  .object({
+  clientType: z.string().trim().min(1).nullable(),
+  contactName: z.string().trim().min(1).nullable(),
   organization: z.string().trim().min(1).nullable(),
   email: z.string().trim().nullable(),
+  phone: z.string().trim().nullable(),
   departureCity: z.string().trim().nullable(),
   arrivalCity: z.string().trim().nullable(),
   departureDate: z.string().trim().nullable(),
   returnDate: z.string().trim().nullable(),
   passengerCount: z.number().int().positive().nullable(),
   tripType: z.enum(["one_way", "round_trip"]).nullable(),
+  hasIntermediateStop: z.boolean(),
+  intermediateStops: z.array(z.string().trim().min(1)).max(8),
   options: z.array(z.string().trim()).max(20),
   status: z.enum(LeadStatusValues),
   humanReviewReason: z.string().trim().nullable()

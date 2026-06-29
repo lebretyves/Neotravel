@@ -59,6 +59,9 @@ export type QuoteSummary = {
 };
 
 export type ExtractedFields = {
+  clientType: string | null;
+  contactName: string | null;
+  organization: string | null;
   departureCity: string | null;
   arrivalCity: string | null;
   departureDate: string | null;
@@ -66,6 +69,7 @@ export type ExtractedFields = {
   passengerCount: number | null;
   tripType: "one_way" | "round_trip" | null;
   email: string | null;
+  phone: string | null;
   options: string[];
   multiDestination: boolean;
   stops: string[];
