@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { detectOptions } from "./detect-options";
+import { detectOptions, detectOptionRemovals } from "./detect-options";
 
 describe("detectOptions", () => {
   it("detects a guide request in option contexts", () => {
@@ -47,5 +47,33 @@ describe("detectOptions", () => {
       guide: true,
       driver_overnight: true,
     });
+  });
+});
+
+describe("detectOptionRemovals", () => {
+  it("detects a guide removal via verb or negation", () => {
+    expect(detectOptionRemovals("enleve mon guide, j'en ai pas besoin finalement")).toEqual(["guide"]);
+    expect(detectOptionRemovals("je ne veux pas de guide")).toEqual(["guide"]);
+    expect(detectOptionRemovals("je ne veux plus de guide")).toEqual(["guide"]);
+    expect(detectOptionRemovals("Sans guide finalement.")).toEqual(["guide"]);
+    expect(detectOptionRemovals("Retire l'accompagnateur s'il te plaît.")).toEqual(["guide"]);
+    expect(detectOptionRemovals("Pas besoin de guide.")).toEqual(["guide"]);
+  });
+
+  it("detects a driver-overnight removal", () => {
+    expect(detectOptionRemovals("enleve la nuit chauffeur")).toEqual(["driver_overnight"]);
+    expect(detectOptionRemovals("pas de nuit chauffeur")).toEqual(["driver_overnight"]);
+  });
+
+  it("does NOT flag a removal when the option is being requested", () => {
+    expect(detectOptionRemovals("je veux un guide")).toEqual([]);
+    expect(detectOptionRemovals("Avec un guide accompagnateur.")).toEqual([]);
+    expect(detectOptionRemovals("Une nuit pour le chauffeur.")).toEqual([]);
+  });
+
+  it("removes only the negated option in a mixed sentence", () => {
+    expect(detectOptionRemovals("je veux un guide mais pas de nuit chauffeur")).toEqual([
+      "driver_overnight",
+    ]);
   });
 });

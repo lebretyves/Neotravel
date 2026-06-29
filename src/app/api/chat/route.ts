@@ -11,7 +11,7 @@ import { buildQualificationResponse } from "../../../lib/ai/qualification-respon
 import { generateAssistantReply, type ReplyTurn } from "../../../lib/ai/generate-reply";
 import { extractTurnFacts } from "../../../lib/ai/extract-turn-facts";
 import { detectIntermediateStops } from "../../../lib/ai/detect-intermediate-stops";
-import { detectOptions } from "../../../lib/ai/detect-options";
+import { detectOptions, detectOptionRemovals } from "../../../lib/ai/detect-options";
 import { canonicalizeCity } from "../../../lib/ai/canonicalize-city";
 import { validateLead } from "../../../lib/ai/validate-lead";
 import { getChatModel } from "../../../lib/ai/provider";
@@ -180,7 +180,14 @@ Message : ${latestUserText}`,
     // Options are detected deterministically and unioned with what's already on the lead so
     // earlier-turn options are never dropped. The LLM never touches options or their price.
     const detectedOptions = detectOptions(latestUserText);
-    const mergedOptions = { ...(existingQualification.options ?? {}), ...detectedOptions };
+    const removedOptions = detectOptionRemovals(latestUserText);
+    const mergedOptions: Record<string, unknown> = { ...(existingQualification.options ?? {}), ...detectedOptions };
+    // Explicit removals win over adds and clear any confirmed quantity for that option.
+    for (const code of removedOptions) {
+      delete mergedOptions[code];
+      if (code === "guide") delete mergedOptions.guideDays;
+      if (code === "driver_overnight") delete mergedOptions.driverNights;
+    }
     const extractedDelta = sanitizeExtractionDelta(
       rawExtractedDelta,
       deterministicFacts,
@@ -190,7 +197,9 @@ Message : ${latestUserText}`,
       ...extractedDelta,
       ...deterministicFacts,
       ...deterministicStops,
-      ...(Object.keys(mergedOptions).length > 0 ? { options: mergedOptions } : {}),
+      // Include options even when emptied by a removal, so mergeLead overwrites the stored
+      // value instead of keeping the old one (an absent key would be treated as "no change").
+      ...(Object.keys(mergedOptions).length > 0 || removedOptions.length > 0 ? { options: mergedOptions } : {}),
       departure_city: extractedDelta.departure_city ?? deterministicFacts.departure_city,
       arrival_city: extractedDelta.arrival_city ?? deterministicFacts.arrival_city,
     };
@@ -272,6 +281,7 @@ Message : ${latestUserText}`,
       email: lead.email ?? null,
       phone: lead.phone ?? null,
       options: detectedOptionCodes(lead.options),
+      removedOptions,
       multiDestination: Boolean(lead.has_intermediate_stop),
       stops: lead.intermediate_stops ?? [],
     };

@@ -71,6 +71,9 @@ export type ExtractedFields = {
   email: string | null;
   phone: string | null;
   options: string[];
+  // Options removed by the user this turn ("enlève mon guide"). The front clears them from
+  // its selection — a union-only merge could never drop an already-chosen option.
+  removedOptions: string[];
   multiDestination: boolean;
   stops: string[];
 };

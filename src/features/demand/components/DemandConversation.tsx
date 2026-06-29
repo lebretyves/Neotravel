@@ -616,6 +616,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
           email: string | null;
           phone: string | null;
           options?: string[];
+          removedOptions?: string[];
           multiDestination?: boolean;
           stops?: string[];
         };
@@ -632,6 +633,12 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
         if (ef.organization) setChatOrganization(ef.organization);
         if (ef.phone) setChatPhone(ef.phone);
         if (ef.options?.length) setSelectedOptions((prev) => normalizeOptionCodes([...prev, ...ef.options!]));
+        if (ef.removedOptions?.length) {
+          const removed = ef.removedOptions;
+          setSelectedOptions((prev) => prev.filter((code) => !removed.includes(code)));
+          if (removed.includes("guide")) setGuideDays(null);
+          if (removed.includes("driver_overnight")) setDriverNights(null);
+        }
         if (ef.multiDestination) setMultiDestination(true);
         if (ef.stops?.length) setStops(ef.stops);
         setChatExtracted((prev) => ({
