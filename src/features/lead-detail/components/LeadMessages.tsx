@@ -4,8 +4,6 @@ import { LeadRouteMap } from "./LeadRouteMap";
 import styles from "./lead-detail.module.css";
 
 export function LeadMessages({ lead }: { lead: Lead }) {
- const confidenceValue = lead.confidence;
- const confidence = typeof confidenceValue === "number" ? Math.round(confidenceValue * 100) : null;
  const routeLabel =
   lead.departureCity && lead.arrivalCity
    ? `${lead.departureCity} → ${lead.arrivalCity}`
@@ -24,11 +22,6 @@ export function LeadMessages({ lead }: { lead: Lead }) {
      <h2 id="route-map-title">Résumé de la demande</h2>
      <p className={styles.routeTitle}>{routeLabel}</p>
     </div>
-    {confidence !== null ? (
-     <span className={styles.confidence} title="Score de confiance de l'extraction automatique des informations.">
-      Confiance IA {confidence}%
-     </span>
-    ) : null}
    </div>
 
    <LeadRouteMap departureCity={lead.departureCity} arrivalCity={lead.arrivalCity} />
