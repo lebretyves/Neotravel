@@ -440,8 +440,55 @@
   line-height: 1.12;
 }
 
+.dropdownHeader {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdownHeader:focus-visible {
+  outline: 3px solid rgba(18, 56, 133, 0.22);
+  outline-offset: 6px;
+  border-radius: 12px;
+}
+
+.dropdownTitleBlock {
+  display: grid;
+  gap: 10px;
+}
+
+.panelTitle {
+  margin: 0;
+  color: #0d2040;
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.12;
+}
+
+.dropdownChevron {
+  width: 12px;
+  height: 12px;
+  border-right: 2px solid #123885;
+  border-bottom: 2px solid #123885;
+  transform: rotate(45deg);
+  transition: transform 0.16s ease;
+}
+
+.dropdownChevronOpen {
+  transform: rotate(225deg);
+}
+
 .reviewStatus,
-.readyStatus {
+.readyStatus,
+.pendingStatus {
   display: inline-grid;
   width: fit-content;
   min-height: 30px;

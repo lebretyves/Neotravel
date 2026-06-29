@@ -335,6 +335,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
   const [selectedOptions, setSelectedOptions] = useState<string[]>(() => demand.options);
   const [multiDestination, setMultiDestination] = useState(() => demand.intermediateStops.length > 0);
   const [stops, setStops] = useState<string[]>(() => demand.intermediateStops);
+  const [contactPanelOpen, setContactPanelOpen] = useState(true);
   const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [chatExtracted, setChatExtracted] = useState<ChatExtracted>({
     clientType: null,
@@ -1258,12 +1259,40 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
           </aside>
 
           <aside className={styles.sidePanel} aria-labelledby="contact-panel-title">
-            <div className={styles.sidePanelHeader}>
-              <h2 id="contact-panel-title">Vos coordonnees</h2>
-            </div>
+            <button
+              type="button"
+              className={styles.dropdownHeader}
+              aria-expanded={contactPanelOpen}
+              aria-controls="contact-panel-fields"
+              onClick={() => setContactPanelOpen((open) => !open)}
+            >
+              <span className={styles.dropdownTitleBlock}>
+                <span id="contact-panel-title" className={styles.panelTitle}>
+                  Vos coordonnees
+                </span>
+                <span
+                  className={
+                    activeDemand.clientType && activeDemand.contactName && activeDemand.phone
+                      ? styles.readyStatus
+                      : styles.pendingStatus
+                  }
+                >
+                  {activeDemand.clientType && activeDemand.contactName && activeDemand.phone ? "Complet" : "A completer"}
+                </span>
+              </span>
+              <span
+                className={
+                  contactPanelOpen
+                    ? `${styles.dropdownChevron} ${styles.dropdownChevronOpen}`
+                    : styles.dropdownChevron
+                }
+                aria-hidden="true"
+              />
+            </button>
 
-            <div className={styles.manualForm}>
-              <div className={styles.manualFields}>
+            {contactPanelOpen ? (
+              <div id="contact-panel-fields" className={styles.manualForm}>
+                <div className={styles.manualFields}>
                 <label>
                   <span>Type de client</span>
                   <select
@@ -1318,8 +1347,9 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
                     <small className={styles.fieldWarning}>Requis pour recevoir le devis.</small>
                   ) : null}
                 </label>
+                </div>
               </div>
-            </div>
+            ) : null}
           </aside>
 
           <aside className={styles.routePreview} aria-labelledby="route-preview-title">
