@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { partners, type PartnerStatus } from "./partnerData";
+import { partners, formatPartnerStatus, type PartnerStatus } from "./partnerData";
 import styles from "./partners.module.css";
 
 function statusClass(status: PartnerStatus) {
@@ -14,7 +14,7 @@ export function PartnerList({ selectedPartnerId }: { selectedPartnerId?: string 
     <section className={styles.panel} aria-labelledby="partner-list-title">
       <div className={styles.panelHeader}>
         <h2 id="partner-list-title">Partenaires autocaristes</h2>
-        <p>Vue indicative pour aider le commercial a preselectionner un partenaire dans le dossier.</p>
+        <p>Vue indicative pour aider le commercial à présélectionner un partenaire dans le dossier.</p>
       </div>
       <div className={styles.list}>
         {partners.map((partner) => (
@@ -24,7 +24,7 @@ export function PartnerList({ selectedPartnerId }: { selectedPartnerId?: string 
               <div className={styles.meta}>
                 <span className={styles.pill}>{partner.zones.join(" / ")}</span>
                 <span className={styles.pill}>{partner.capacity}</span>
-                <span className={statusClass(partner.status)}>{partner.status}</span>
+                <span className={statusClass(partner.status)}>{formatPartnerStatus(partner.status)}</span>
               </div>
               <p className={styles.score}>Score interne : {partner.internalScore}/100. {partner.note}</p>
             </div>
@@ -33,7 +33,7 @@ export function PartnerList({ selectedPartnerId }: { selectedPartnerId?: string 
               className={styles.selectLink}
               href={`/dashboard/partenaires?partner=${partner.id}`}
             >
-              Selectionner
+              Sélectionner
             </Link>
           </article>
         ))}

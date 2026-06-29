@@ -134,7 +134,7 @@ export function ClientsManager({ initialClients }: { initialClients: ClientRow[]
       closeEditor();
       startTransition(() => router.refresh());
     } catch {
-      setError("Erreur reseau. Reessayez.");
+      setError("Erreur réseau. Réessayez.");
     }
   }
 
@@ -150,7 +150,7 @@ export function ClientsManager({ initialClients }: { initialClients: ClientRow[]
       setClients((prev) => prev.filter((c) => c.id !== client.id));
       startTransition(() => router.refresh());
     } catch {
-      alert("Erreur reseau. Reessayez.");
+      alert("Erreur réseau. Réessayez.");
     }
   }
 
@@ -170,7 +170,7 @@ export function ClientsManager({ initialClients }: { initialClients: ClientRow[]
       setClients((prev) => prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)));
       startTransition(() => router.refresh());
     } catch {
-      alert("Erreur reseau. Reessayez.");
+      alert("Erreur réseau. Réessayez.");
     }
   }
 
@@ -241,7 +241,7 @@ export function ClientsManager({ initialClients }: { initialClients: ClientRow[]
               </div>
               <div className={styles.rowActions}>
                 <button type="button" className={styles.iconButton} onClick={() => toggleActive(client)} disabled={isPending}>
-                  {client.active ? "Desactiver" : "Activer"}
+                  {client.active ? "Désactiver" : "Activer"}
                 </button>
                 <button type="button" className={styles.iconButton} onClick={() => openEdit(client)}>
                   Editer

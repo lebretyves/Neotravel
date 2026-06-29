@@ -172,7 +172,7 @@ export function LeadEditForm({ lead }: { lead: Lead }) {
      <label>
       Type de client
       <select value={form.clientType} onChange={(event) => set("clientType", event.target.value)}>
-       <option value="">A confirmer</option>
+       <option value="">À confirmer</option>
        <option value="Particulier">Particulier</option>
        <option value="Entreprise">Entreprise</option>
        <option value="Association">Association</option>

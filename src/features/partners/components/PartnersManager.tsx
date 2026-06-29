@@ -5,7 +5,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { PartnerAvailabilityPanel } from "./PartnerAvailabilityPanel";
 import { PartnerContextPanel } from "./PartnerContextPanel";
 import { PartnerSelectionPanel } from "./PartnerSelectionPanel";
-import { partners, partnerStatuses, type Partner, type PartnerStatus } from "./partnerData";
+import { partners, partnerStatuses, formatPartnerStatus, type Partner, type PartnerStatus } from "./partnerData";
 import styles from "./partners.module.css";
 
 type PartnerWithSource = Partner & {
@@ -101,8 +101,8 @@ export function PartnersManager({ selectedPartnerId }: { selectedPartnerId?: str
    capacity: form.capacity.trim(),
    status: form.status,
    internalScore: Math.max(0, Math.min(100, Number(form.internalScore) || 0)),
-   note: form.note.trim() || "Partenaire ajoute manuellement depuis le dashboard.",
-   agenda: [{ date: new Date().toLocaleDateString("fr-FR"), status: "Partenaire ajoute au reseau" }],
+   note: form.note.trim() || "Partenaire ajouté manuellement depuis le dashboard.",
+   agenda: [{ date: new Date().toLocaleDateString("fr-FR"), status: "Partenaire ajouté au réseau" }],
    source: "custom"
   };
 
@@ -123,7 +123,7 @@ export function PartnersManager({ selectedPartnerId }: { selectedPartnerId?: str
    <section className={styles.panel} aria-labelledby="partner-create-title">
     <div className={styles.panelHeader}>
      <h2 id="partner-create-title">Ajouter un partenaire autocariste</h2>
-     <p>Nouveau partenaire ajoute au reseau commercial local.</p>
+     <p>Nouveau partenaire ajouté au réseau commercial local.</p>
     </div>
     <form className={styles.partnerForm} onSubmit={addPartner}>
      <label>
@@ -139,11 +139,11 @@ export function PartnersManager({ selectedPartnerId }: { selectedPartnerId?: str
       />
      </label>
      <label>
-      <span>Capacite</span>
+      <span>Capacité</span>
       <input
        value={form.capacity}
        onChange={(event) => updateField("capacity", event.target.value)}
-       placeholder="Ex : 20 a 63 passagers"
+       placeholder="Ex : 20 à 63 passagers"
       />
      </label>
      <label>
@@ -151,7 +151,7 @@ export function PartnersManager({ selectedPartnerId }: { selectedPartnerId?: str
       <select value={form.status} onChange={(event) => updateField("status", event.target.value as PartnerStatus)}>
        {partnerStatuses.map((status) => (
         <option key={status} value={status}>
-         {status}
+         {formatPartnerStatus(status)}
         </option>
        ))}
       </select>
@@ -171,7 +171,7 @@ export function PartnersManager({ selectedPartnerId }: { selectedPartnerId?: str
       <textarea
        value={form.note}
        onChange={(event) => updateField("note", event.target.value)}
-       placeholder="Contexte, specialite, contraintes, contact..."
+       placeholder="Contexte, spécialité, contraintes, contact..."
       />
      </label>
      <button className={styles.primary} type="submit" disabled={!canSubmit}>
@@ -186,7 +186,7 @@ export function PartnersManager({ selectedPartnerId }: { selectedPartnerId?: str
      <div className={styles.panelHeader}>
       <h2 id="partner-list-title">Partenaires autocaristes</h2>
       <p>
-       {allPartners.length} partenaire{allPartners.length > 1 ? "s" : ""}, dont {customPartners.length} ajoute
+       {allPartners.length} partenaire{allPartners.length > 1 ? "s" : ""}, dont {customPartners.length} ajouté
        {customPartners.length > 1 ? "s" : ""}.
       </p>
      </div>
@@ -198,7 +198,7 @@ export function PartnersManager({ selectedPartnerId }: { selectedPartnerId?: str
          <div className={styles.meta}>
           <span className={styles.pill}>{partner.zones.join(" / ")}</span>
           <span className={styles.pill}>{partner.capacity}</span>
-          <span className={statusClass(partner.status)}>{partner.status}</span>
+          <span className={statusClass(partner.status)}>{formatPartnerStatus(partner.status)}</span>
           <span className={styles.pill}>{partner.source === "custom" ? "Ajouté" : "Défaut"}</span>
          </div>
          <p className={styles.score}>Score interne : {partner.internalScore}/100. {partner.note}</p>
@@ -210,7 +210,7 @@ export function PartnersManager({ selectedPartnerId }: { selectedPartnerId?: str
           className={styles.selectLink}
           onClick={() => setSelectedId(partner.id)}
          >
-          Selectionner
+          Sélectionner
          </button>
          {partner.source === "custom" ? (
           <button type="button" className={styles.deleteButton} aria-label={`Supprimer ${partner.name}`} onClick={() => deletePartner(partner.id)}>

@@ -22,7 +22,7 @@ export function LeadHistory({ lead }: { lead: Lead }) {
     </li>
     <li>
      <span>3</span>
-     Route et capacite verifiees pour devis ou human review.
+     Route et capacité vérifiées pour devis ou validation humaine.
     </li>
    </ol>
   </section>

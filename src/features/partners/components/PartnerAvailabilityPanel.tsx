@@ -7,12 +7,12 @@ export function PartnerAvailabilityPanel({ partner }: { partner: Partner | null 
       <h2 id="partner-agenda-title">Agenda indicatif</h2>
       {!partner ? (
         <p className={styles.empty}>
-          Selectionnez un partenaire pour afficher son agenda indicatif. Aucun statut ne vaut confirmation automatique.
+          Sélectionnez un partenaire pour afficher son agenda indicatif. Aucun statut ne vaut confirmation automatique.
         </p>
       ) : (
         <>
           <p>
-            Agenda affiche apres selection de {partner.name}. La validation finale reste une action commerciale humaine.
+            Agenda affiché après sélection de {partner.name}. La validation finale reste une action commerciale humaine.
           </p>
           <div className={styles.agenda}>
             {partner.agenda.map((item) => (

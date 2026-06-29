@@ -9,7 +9,7 @@ import { StatusBadge } from "./StatusBadge";
 export function PipelineStats() {
  const kpis = [
   ["Demandes", mockLeads.length],
-  ["Human review", mockLeads.filter((lead) => lead.status === "HUMAN_REVIEW").length],
+  ["Validation humaine", mockLeads.filter((lead) => lead.status === "HUMAN_REVIEW").length],
   ["Devis envoyés", mockQuotes.filter((quote) => quote.status === "QUOTE_SENT").length],
   ["Relances", mockFollowups.filter((followup) => followup.status === "SCHEDULED").length]
  ];
@@ -19,12 +19,12 @@ export function PipelineStats() {
   <main className={styles.page}>
    <header className={styles.header}>
     <div>
-     <p className={styles.eyebrow}>Parcours pro apres landing</p>
-     <h1>Dashboard equipe</h1>
-     <p>Vue de pilotage MVP : demandes, devis, relances, reprises humaines et scenarios de soutenance.</p>
+     <p className={styles.eyebrow}>Parcours pro après landing</p>
+     <h1>Dashboard équipe</h1>
+     <p>Vue de pilotage MVP : demandes, devis, relances, reprises humaines et scénarios de soutenance.</p>
     </div>
     <Link className={styles.primary} href="/dashboard/demandes/demo-lead-alpha">
-     Ouvrir dossier demo
+     Ouvrir dossier démo
     </Link>
    </header>
 
@@ -41,8 +41,8 @@ export function PipelineStats() {
     <section className={styles.panel} aria-labelledby="team-pipeline-title">
      <div className={styles.panelHeader}>
       <div>
-       <h2 id="team-pipeline-title">Activite commerciale</h2>
-       <p>Les boutons ouvrent les vues metier existantes, sans recalcul de prix hors moteur.</p>
+       <h2 id="team-pipeline-title">Activité commerciale</h2>
+       <p>Les boutons ouvrent les vues métier existantes, sans recalcul de prix hors moteur.</p>
       </div>
       <Link className={styles.secondary} href="/dashboard/demandes">
        Voir tout
@@ -60,13 +60,13 @@ export function PipelineStats() {
       {hotLeads.map((lead) => (
        <div className={styles.row} key={lead.id}>
         <span>
-         <strong>{lead.organization ?? "A completer"}</strong>
+         <strong>{lead.organization ?? "À compléter"}</strong>
          <small>{lead.aiSummary ?? "Qualification en cours"}</small>
         </span>
         <span>
          {lead.departureCity ?? "?"} - {lead.arrivalCity ?? "?"}
         </span>
-        <span>{lead.departureDate ?? "A confirmer"}</span>
+        <span>{lead.departureDate ?? "À confirmer"}</span>
         <span>
          <StatusBadge status={lead.status} />
         </span>
@@ -82,7 +82,7 @@ export function PipelineStats() {
      <section className={styles.panel} aria-labelledby="scenario-title">
       <div className={styles.panelHeader}>
        <div>
-        <h2 id="scenario-title">Scenarios demo</h2>
+        <h2 id="scenario-title">Scénarios démo</h2>
         <p>Kick-off : les cas servent de pistes de soutenance.</p>
        </div>
       </div>
@@ -99,7 +99,7 @@ export function PipelineStats() {
      <section className={styles.panel} aria-labelledby="links-title">
       <div className={styles.panelHeader}>
        <div>
-        <h2 id="links-title">Acces rapides</h2>
+        <h2 id="links-title">Accès rapides</h2>
         <p>Suivi client, relances et reprise humaine.</p>
        </div>
       </div>
@@ -111,7 +111,7 @@ export function PipelineStats() {
        </li>
        <li>
         <Link className={styles.secondary} href="/dashboard/human-review">
-         Human review
+         Validation humaine
         </Link>
        </li>
       </ul>

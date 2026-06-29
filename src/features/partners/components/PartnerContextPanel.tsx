@@ -6,8 +6,8 @@ export function PartnerContextPanel({ partner }: { partner: Partner | null }) {
     <section className={styles.card} aria-labelledby="partner-context-title">
       <h2 id="partner-context-title">Contexte partenaire</h2>
       <p>
-        L&apos;IA peut suggerer un contexte de preselection, mais elle ne confirme jamais un engagement partenaire ni un
-        engagement operationnel.
+        L&apos;IA peut suggérer un contexte de présélection, mais elle ne confirme jamais un engagement partenaire ni un
+        engagement opérationnel.
       </p>
       {partner ? (
         <ul className={styles.infoList}>

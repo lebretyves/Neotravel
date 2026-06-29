@@ -31,7 +31,7 @@ export function DemoScenarioPanel({ scenarios }: DemoScenarioPanelProps) {
 
    setState({
     scenarioId: scenario.id,
-    message: `${scenario.title} charge : ${payload.counts.leads} demande(s), ${payload.counts.quotes} devis, ${payload.counts.followups} relance(s).`,
+    message: `${scenario.title} chargé : ${payload.counts.leads} demande(s), ${payload.counts.quotes} devis, ${payload.counts.followups} relance(s).`,
     status: "success"
    });
   } catch (error) {
@@ -48,7 +48,7 @@ export function DemoScenarioPanel({ scenarios }: DemoScenarioPanelProps) {
    <div className={styles.header}>
     <div>
      <p className={styles.eyebrow}>DEMO_MODE</p>
-     <h2 id="demo-scenarios-title">Scenarios soutenance</h2>
+     <h2 id="demo-scenarios-title">Scénarios soutenance</h2>
     </div>
     <span className={styles.badge}>Fixtures fictives</span>
    </div>

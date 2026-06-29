@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Bus, ClipboardList, Network, Target } from "lucide-react";
 import type { PartnersDashboardData } from "@/features/dashboard/services/getPartnersDashboardData";
+import { formatPartnerStatus } from "@/features/partners/components/partnerData";
 import { PartnersManager } from "@/features/partners/components/PartnersManager";
 import { AlphaDashboardLayout } from "./AlphaDashboardLayout";
 import styles from "./alphaDashboard.module.css";
@@ -80,7 +81,7 @@ export function PartnersDashboardClient({
                   <div>
                     <strong>{partner.name}</strong>
                     <span>
-                      {partner.status} · Score {partner.score}
+                      {formatPartnerStatus(partner.status)} · Score {partner.score}
                     </span>
                   </div>
                 </button>
@@ -118,7 +119,7 @@ export function PartnersDashboardClient({
                 </span>
                 <span>{partner.zones}</span>
                 <span>{partner.capacity}</span>
-                <span>{partner.status}</span>
+                <span>{formatPartnerStatus(partner.status)}</span>
                 <span>{partner.score}</span>
               </div>
             ))}

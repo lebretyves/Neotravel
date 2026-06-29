@@ -1,12 +1,13 @@
 import type { Partner } from "./partnerData";
+import { formatPartnerStatus } from "./partnerData";
 import styles from "./partners.module.css";
 
 export function PartnerSelectionPanel({ partner }: { partner: Partner | null }) {
   return (
     <section className={styles.card} aria-labelledby="partner-selection-title">
-      <h2 id="partner-selection-title">Selection commerciale</h2>
+      <h2 id="partner-selection-title">Sélection commerciale</h2>
       {!partner ? (
-        <p>Aucun partenaire selectionne. Choisissez une ligne pour consulter le contexte du dossier.</p>
+        <p>Aucun partenaire sélectionné. Choisissez une ligne pour consulter le contexte du dossier.</p>
       ) : (
         <>
           <ul className={styles.infoList}>
@@ -14,10 +15,10 @@ export function PartnerSelectionPanel({ partner }: { partner: Partner | null }) 
               Partenaire <strong>{partner.name}</strong>
             </li>
             <li>
-              Statut <strong>{partner.status}</strong>
+              Statut <strong>{formatPartnerStatus(partner.status)}</strong>
             </li>
             <li>
-              Capacite indicative <strong>{partner.capacity}</strong>
+              Capacité indicative <strong>{partner.capacity}</strong>
             </li>
             <li>
               Score interne <strong>{partner.internalScore}/100</strong>
@@ -28,11 +29,11 @@ export function PartnerSelectionPanel({ partner }: { partner: Partner | null }) 
               Poser option
             </button>
             <button className={styles.secondary} type="button">
-              Confirmer commercial
+              Confirmer (commercial)
             </button>
           </div>
           <p className={styles.helper}>
-            Ces actions representent une decision commerciale humaine. Une suggestion IA ne peut pas confirmer un
+            Ces actions représentent une décision commerciale humaine. Une suggestion IA ne peut pas confirmer un
             partenaire.
           </p>
         </>

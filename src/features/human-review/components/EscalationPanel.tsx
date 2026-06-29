@@ -1,3 +1,3 @@
 export function EscalationPanel() {
-  return <section>Escalader a un humain</section>;
+  return <section>Escalader à un humain</section>;
 }

@@ -113,7 +113,7 @@ export function getLeadCommercialAction({
   return {
    label: "Automatisation à reprendre",
    detail: "Demande qualifiée sans devis : le flux attendu est devis auto ou validation humaine.",
-   cta: "Verifier",
+   cta: "Vérifier",
    href: leadHref,
    priority: 0,
    tone: "critical"
