@@ -17,6 +17,14 @@ import { validateLead } from "../../../lib/ai/validate-lead";
 import { getChatModel } from "../../../lib/ai/provider";
 import { sanitizeExtractionDelta } from "../../../lib/ai/sanitize-extraction-delta";
 import { sendLeadStatusEmail } from "../../../features/emails/services/customerEmailService";
+import {
+  CHAT_API_MESSAGES,
+  localizedHumanReviewMessage,
+  localizedQualifiedFallback,
+  localizedQualifiedSummary,
+  parseChatLanguage,
+  type ChatLanguage,
+} from "../../../lib/ai/chat-locale";
 
 export const runtime = "nodejs";
 const DEFAULT_QUALIFICATION_TIMEOUT_MS = 30_000;
@@ -26,6 +34,9 @@ export async function POST(request: Request): Promise<Response> {
   const startedAt = Date.now();
   try {
     const body = await request.json().catch(() => null);
+    const language = parseChatLanguage(
+      typeof body === "object" && body !== null ? (body as Record<string, unknown>).language : undefined,
+    );
     const messages = normalizeMessages(body);
     const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
     const latestUserText = getMessageText(latestUserMessage?.content);
@@ -53,7 +64,7 @@ export async function POST(request: Request): Promise<Response> {
       return chatJson(
         {
           status: "ERROR",
-          message: "Votre message est vide. Ajoutez quelques informations sur votre trajet.",
+          message: CHAT_API_MESSAGES[language].emptyMessage,
         },
         { status: 400 },
       );
@@ -65,8 +76,7 @@ export async function POST(request: Request): Promise<Response> {
       return chatJson(
         {
           status: "HUMAN_REVIEW",
-          message:
-            "Les règles tarifaires ne peuvent pas être modifiées depuis la conversation. Un conseiller peut vérifier votre demande.",
+          message: CHAT_API_MESSAGES[language].promptInjection,
           reviewReason: "PROMPT_INJECTION_ATTEMPT",
         },
         { status: 200 },
@@ -81,7 +91,7 @@ export async function POST(request: Request): Promise<Response> {
       return chatJson(
         {
           status: "ERROR",
-          message: "Le service de conversation est momentanément indisponible. Réessayez dans un instant.",
+          message: CHAT_API_MESSAGES[language].serviceUnavailable,
         },
         { status: 503 },
       );
@@ -300,7 +310,7 @@ Message : ${latestUserText}`,
       );
       return chatJson({
         status: "HUMAN_REVIEW",
-        message: formatHumanReviewMessage(reason),
+        message: formatHumanReviewMessage(reason, language),
         leadId: leadResult.leadId,
         reviewReason: reason,
         extractedFields,
@@ -324,7 +334,7 @@ Message : ${latestUserText}`,
       );
       return chatJson({
         status: "HUMAN_REVIEW",
-        message: formatHumanReviewMessage("PAX_OVER_85"),
+        message: formatHumanReviewMessage("PAX_OVER_85", language),
         leadId: leadResult.leadId,
         reviewReason: "PAX_OVER_85",
         extractedFields,
@@ -348,10 +358,11 @@ Message : ${latestUserText}`,
           warnings,
           conversation: replyConversation,
           lastTurnAddedUsableInfo,
+          language,
         },
         {
           generate: generateReply,
-          fallback: buildQualificationResponse(warnings, missing.missing_fields),
+          fallback: buildQualificationResponse(warnings, missing.missing_fields, language),
         },
       );
 
@@ -379,16 +390,9 @@ Message : ${latestUserText}`,
     // All required fields collected: the lead is QUALIFIED. Quote generation is NOT triggered
     // here — it is an explicit user action (the "Recevoir mon devis" button on the form, which
     // goes through /api/leads/sync then /api/quotes). The chat only confirms qualification.
-    const qualifiedSummary = [
-      lead.departure_city && lead.arrival_city ? `${lead.departure_city} → ${lead.arrival_city}` : null,
-      lead.departure_date ? `le ${lead.departure_date}` : null,
-      lead.passenger_count ? `${lead.passenger_count} passagers` : null,
-      lead.trip_type === "round_trip" ? "aller-retour" : lead.trip_type === "one_way" ? "aller simple" : null,
-    ]
-      .filter(Boolean)
-      .join(", ");
+    const qualifiedSummary = localizedQualifiedSummary(lead, language);
 
-    const qualifiedFallback = `Parfait, j'ai toutes les informations pour votre trajet (${qualifiedSummary}). Cliquez sur « Recevoir mon devis » pour générer votre estimation.`;
+    const qualifiedFallback = localizedQualifiedFallback(qualifiedSummary, language);
     const qualifiedMessage = await generateAssistantReply(
       {
         status: "QUALIFIED",
@@ -397,6 +401,7 @@ Message : ${latestUserText}`,
         warnings,
         conversation: replyConversation,
         lastTurnAddedUsableInfo,
+        language,
       },
       { generate: generateReply, fallback: qualifiedFallback },
     );
@@ -618,26 +623,8 @@ function logAgentEvent(
   });
 }
 
-const HUMAN_REVIEW_MESSAGES: Record<string, string> = {
-  PAX_OVER_85:
-    "Votre demande dépasse notre capacité standard (85 passagers). Notre équipe vous contactera pour une solution adaptée.",
-  DEPARTURE_IN_PAST:
-    "La date de départ indiquée est déjà passée. Merci de nous préciser une date à venir.",
-  UNKNOWN_ROUTE_NO_DISTANCE:
-    "Cet itinéraire n'est pas encore référencé dans notre base. Notre équipe calculera le tarif manuellement et vous recontactera.",
-  INVALID_DATE:
-    "La date de départ fournie est invalide. Merci de la vérifier.",
-  PAX_ZERO_OR_NEGATIVE:
-    "Le nombre de passagers indiqué n'est pas valide. Merci de le préciser.",
-  INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE:
-    "Votre trajet comporte un arrêt intermédiaire. Notre équipe doit vérifier l'itinéraire avant de préparer le devis.",
-};
-
-function formatHumanReviewMessage(reason: string): string {
-  return (
-    HUMAN_REVIEW_MESSAGES[reason] ??
-    "Votre demande nécessite une vérification par notre équipe. Nous vous contacterons rapidement."
-  );
+function formatHumanReviewMessage(reason: string, language: ChatLanguage): string {
+  return localizedHumanReviewMessage(reason, language);
 }
 
 function extractLeadIdFromBody(body: unknown): string | undefined {

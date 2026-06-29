@@ -78,7 +78,7 @@ function euro(value: number) {
 }
 
 function formatDate(value: string | null | undefined) {
-  if (!value) return "A confirmer";
+  if (!value) return "À confirmer";
   const date = new Date(`${value}T12:00:00`);
   if (Number.isNaN(date.getTime())) return value;
 
@@ -96,7 +96,7 @@ function formatTripType(value: string | null | undefined) {
   if (value === "round_trip") return "Aller-retour";
   if (value === "one_way") return "Aller simple";
 
-  return "A confirmer";
+  return "À confirmer";
 }
 
 function formatTraceabilityDate(value: Date) {
@@ -370,12 +370,12 @@ async function generateBrowserPdf(input: {
         </div>
       </header>
       <section class="strip">
-        <div><span class="label">${escapeHtml(tr("Date emission"))}</span><strong>${new Date().toLocaleDateString("fr-FR")}</strong></div>
-        <div><span class="label">${escapeHtml(tr("Validite offre"))}</span><strong>${escapeHtml(tr("7 jours"))}</strong></div>
+        <div><span class="label">${escapeHtml(tr("Date d'émission"))}</span><strong>${new Date().toLocaleDateString("fr-FR")}</strong></div>
+        <div><span class="label">${escapeHtml(tr("Validité offre"))}</span><strong>${escapeHtml(tr("7 jours"))}</strong></div>
         <div><span class="label">${escapeHtml(tr("Canal envoi"))}</span><strong>Email</strong></div>
       </section>
       <section class="parties">
-        <div class="box"><h2>${escapeHtml(tr("Emetteur"))}</h2><p>NeoTravel SAS</p><p>${escapeHtml(tr("Transport de voyageurs"))}</p><p>contact@neotravel.fr</p></div>
+        <div class="box"><h2>${escapeHtml(tr("Émetteur"))}</h2><p>NeoTravel SAS</p><p>${escapeHtml(tr("Transport de voyageurs"))}</p><p>contact@neotravel.fr</p></div>
         <div class="box"><h2>${escapeHtml(tr("Client"))}</h2><p>${escapeHtml(input.clientName)}</p><p>${escapeHtml(tr("Email : "))}${escapeHtml(input.clientEmail)}</p><p>${escapeHtml(tr("Reference demande : "))}${escapeHtml(input.quoteId)}</p></div>
       </section>
       <section class="trip">
@@ -385,16 +385,16 @@ async function generateBrowserPdf(input: {
           <div><span class="label">${escapeHtml(tr("Date et horaires"))}</span><strong>${escapeHtml(input.tripDates)}</strong></div>
           <div><span class="label">${escapeHtml(tr("Passagers"))}</span><strong>${escapeHtml(input.passengerLabel)}</strong></div>
           <div><span class="label">${escapeHtml(tr("Type de trajet"))}</span><strong>${escapeHtml(input.tripType)}</strong></div>
-          <div><span class="label">${escapeHtml(tr("Vehicule"))}</span><strong>${escapeHtml(tr(input.calculation.breakdown.vehicleLabel))}</strong></div>
+          <div><span class="label">${escapeHtml(tr("Véhicule"))}</span><strong>${escapeHtml(tr(input.calculation.breakdown.vehicleLabel))}</strong></div>
           <div><span class="label">${escapeHtml(tr("Distance"))}</span><strong>${input.calculation.distanceKm} km</strong></div>
         </div>
         <span class="chip">${escapeHtml(input.optionLabel)}</span>
       </section>
       <h2>${escapeHtml(tr("Detail estimatif"))}</h2>
-      <table><thead><tr><th>${escapeHtml(tr("Designation"))}</th><th>${escapeHtml(tr("Qte"))}</th><th>${escapeHtml(tr("Prix HT"))}</th><th>TVA</th><th>${escapeHtml(tr("Total TTC"))}</th></tr></thead><tbody>${rows}</tbody></table>
+      <table><thead><tr><th>${escapeHtml(tr("Désignation"))}</th><th>${escapeHtml(tr("Qte"))}</th><th>${escapeHtml(tr("Prix HT"))}</th><th>TVA</th><th>${escapeHtml(tr("Total TTC"))}</th></tr></thead><tbody>${rows}</tbody></table>
       <section class="bottom">
         <div class="trace"><h3>${escapeHtml(tr("Traçabilité du devis"))}</h3><p>${escapeHtml(tr("Calcul réalisé le : "))}${escapeHtml(input.traceabilityDate)}</p><p>${escapeHtml(tr("Moteur : "))}${escapeHtml(input.engineLabel)}</p><p>${escapeHtml(tr("Référence : "))}${escapeHtml(input.traceabilityId)}</p><p>${escapeHtml(tr("Devis généré automatiquement selon les règles métier NeoTravel, sous réserve de validation opérationnelle."))}</p><p>${escapeHtml(legalNote)}</p></div>
-        <div class="totals"><div class="totalLine"><span>${escapeHtml(tr("Total HT"))}</span><strong>${escapeHtml(euro(input.calculation.priceHt))}</strong></div><div class="totalLine"><span>${escapeHtml(tr("TVA estimee"))}</span><strong>${escapeHtml(euro(input.calculation.vatAmount))}</strong></div><div class="totalLine"><span>${escapeHtml(tr("Total TTC"))}</span><strong>${escapeHtml(euro(input.calculation.priceTtc))}</strong></div><p class="sub">${escapeHtml(tr("Montant a confirmer apres disponibilite finale"))}</p></div>
+        <div class="totals"><div class="totalLine"><span>${escapeHtml(tr("Total HT"))}</span><strong>${escapeHtml(euro(input.calculation.priceHt))}</strong></div><div class="totalLine"><span>${escapeHtml(tr("TVA estimée"))}</span><strong>${escapeHtml(euro(input.calculation.vatAmount))}</strong></div><div class="totalLine"><span>${escapeHtml(tr("Total TTC"))}</span><strong>${escapeHtml(euro(input.calculation.priceTtc))}</strong></div><p class="sub">${escapeHtml(tr("Montant à confirmer après disponibilité finale"))}</p></div>
       </section>
       <section class="conditions"><h2>${escapeHtml(tr("Conditions et acceptation"))}</h2><p>${escapeHtml(tr("Offre valable sous reserve de disponibilite partenaires et chauffeur. Le devis devient contractuel apres signature electronique ou accord ecrit du client. Ce document est un devis, pas une facture."))}</p></section>
     </section>
@@ -426,9 +426,9 @@ export async function generateQuotePdf(quoteId: string, language?: string | null
       ? `${lead.departureCity} -> ${lead.arrivalCity}`
       : calculation.breakdown.routeLabel;
   const clientName = lead?.organization ?? tr("Client particulier / organisation");
-  const clientEmail = lead?.email ?? tr("Email a confirmer");
-  const passengerLabel = lead?.passengerCount ? `${lead.passengerCount} ${tr("passagers")}` : tr("A confirmer");
-  const tripDates = `${formatTripDates(lead?.departureDate, lead?.returnDate)} - ${tr("horaires a confirmer")}`;
+  const clientEmail = lead?.email ?? tr("Email à confirmer");
+  const passengerLabel = lead?.passengerCount ? `${lead.passengerCount} ${tr("passagers")}` : tr("À confirmer");
+  const tripDates = `${formatTripDates(lead?.departureDate, lead?.returnDate)} - ${tr("horaires à confirmer")}`;
   const tripType = tr(formatTripType(lead?.tripType));
   const options = lead?.options.length ? lead.options : calculation.breakdown.options.map((option) => option.label);
   const generatedAt = new Date();
@@ -438,20 +438,20 @@ export async function generateQuotePdf(quoteId: string, language?: string | null
 
   if (requestedLanguage === "ZH" || requestedLanguage === "AR") {
     const trAny = (source: string) => translateAny(source, requestedLanguage);
-    const browserOptions = options.length ? options.map((option) => trAny(option)).join("   ") : trAny("Aucune option ajoutee");
+    const browserOptions = options.length ? options.map((option) => trAny(option)).join("   ") : trAny("Aucune option ajoutée");
     const browserPdf = await generateBrowserPdf({
       calculation,
-      clientEmail: lead?.email ?? trAny("Email a confirmer"),
+      clientEmail: lead?.email ?? trAny("Email à confirmer"),
       clientName: lead?.organization ?? trAny("Client particulier / organisation"),
       engineLabel,
       language: requestedLanguage,
       optionLabel: browserOptions,
-      passengerLabel: lead?.passengerCount ? `${lead.passengerCount} ${trAny("passagers")}` : trAny("A confirmer"),
+      passengerLabel: lead?.passengerCount ? `${lead.passengerCount} ${trAny("passagers")}` : trAny("À confirmer"),
       quoteId: quote.leadId,
       routeLabel,
       traceabilityDate,
       traceabilityId,
-      tripDates: `${formatTripDates(lead?.departureDate, lead?.returnDate)} - ${trAny("horaires a confirmer")}`,
+      tripDates: `${formatTripDates(lead?.departureDate, lead?.returnDate)} - ${trAny("horaires à confirmer")}`,
       tripType: trAny(formatTripType(lead?.tripType))
     });
 
@@ -474,12 +474,12 @@ export async function generateQuotePdf(quoteId: string, language?: string | null
     rect(66, 655, 463, 46, colors.paleBlue, colors.border)
   ];
 
-  field(commands, tr("Date emission"), generatedAt.toLocaleDateString("fr-FR"), 82, 682);
-  field(commands, tr("Validite offre"), tr("7 jours"), 240, 682);
+  field(commands, tr("Date d'émission"), generatedAt.toLocaleDateString("fr-FR"), 82, 682);
+  field(commands, tr("Validité offre"), tr("7 jours"), 240, 682);
   field(commands, tr("Canal envoi"), "Email", 410, 682);
 
   commands.push(rect(66, 550, 220, 68, colors.white, colors.border));
-  commands.push(text(tr("Emetteur"), 80, 598, 12, "F2", colors.navy));
+  commands.push(text(tr("Émetteur"), 80, 598, 12, "F2", colors.navy));
   commands.push(text("NeoTravel SAS", 80, 581, 9));
   commands.push(text(tr("Transport de voyageurs"), 80, 567, 9));
   commands.push(text("contact@neotravel.fr", 80, 553, 9));
@@ -496,16 +496,16 @@ export async function generateQuotePdf(quoteId: string, language?: string | null
   field(commands, tr("Date et horaires"), tripDates, 250, 470);
   field(commands, tr("Passagers"), passengerLabel, 425, 470);
   field(commands, tr("Type de trajet"), tripType, 80, 438);
-  field(commands, tr("Vehicule"), tr(calculation.breakdown.vehicleLabel), 250, 438);
+  field(commands, tr("Véhicule"), tr(calculation.breakdown.vehicleLabel), 250, 438);
   field(commands, tr("Distance"), `${calculation.distanceKm} km`, 425, 438);
 
-  const optionLabel = options.length ? options.map((option) => tr(option)).join("   ") : tr("Aucune option ajoutee");
+  const optionLabel = options.length ? options.map((option) => tr(option)).join("   ") : tr("Aucune option ajoutée");
   commands.push(rect(80, 404, Math.min(180, 58 + optionLabel.length * 3.8), 18, colors.chipBlue, colors.border));
   commands.push(text(optionLabel, 92, 410, 8, "F2", colors.blue));
 
   commands.push(text(tr("Detail estimatif"), 66, 363, 13, "F2", colors.navy));
   commands.push(rect(66, 335, 463, 22, colors.navy));
-  commands.push(text(tr("Designation"), 80, 343, 8, "F2", colors.white));
+  commands.push(text(tr("Désignation"), 80, 343, 8, "F2", colors.white));
   commands.push(text(tr("Qte"), 310, 343, 8, "F2", colors.white));
   commands.push(text(tr("Prix HT"), 356, 343, 8, "F2", colors.white));
   commands.push(text("TVA", 428, 343, 8, "F2", colors.white));
@@ -543,11 +543,11 @@ export async function generateQuotePdf(quoteId: string, language?: string | null
   commands.push(rect(340, 112, 189, 100, colors.paleBlue, colors.border));
   commands.push(text(tr("Total HT"), 358, 190, 9, "F2", colors.muted));
   commands.push(text(euro(calculation.priceHt), 450, 190, 9, "F2"));
-  commands.push(text(tr("TVA estimee"), 358, 170, 9, "F2", colors.muted));
+  commands.push(text(tr("TVA estimée"), 358, 170, 9, "F2", colors.muted));
   commands.push(text(euro(calculation.vatAmount), 450, 170, 9, "F2"));
   commands.push(text(tr("Total TTC"), 358, 146, 12, "F2", colors.navy));
   commands.push(text(euro(calculation.priceTtc), 440, 146, 12, "F2", colors.navy));
-  commands.push(text(tr("Montant a confirmer apres disponibilite finale"), 358, 134, 7, "F1", colors.muted));
+  commands.push(text(tr("Montant à confirmer après disponibilité finale"), 358, 134, 7, "F1", colors.muted));
 
   commands.push(text(tr("Conditions et acceptation"), 66, 106, 11, "F2", colors.navy));
   commands.push(

@@ -2,7 +2,6 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { getAuditLogs } from "@/features/admin/services/getAuditLogs";
 import { getModelRuns } from "@/features/admin/services/getModelRuns";
-import { getPricingAdminData } from "@/features/admin/services/getPricingRules";
 import { getIntegrationsStatus } from "@/features/integrations/integrations";
 import { humanReviewReasonLabel } from "@/features/human-review/reasonLabels";
 import { listFollowups, listLeads, listQuotes } from "@/shared/lib/data";
@@ -738,16 +737,19 @@ export async function AdminOverviewDashboardPage() {
 }
 
 export async function PricingDashboardPage() {
- const { pricingRules } = await getPricingAdminData();
+ const [rules, storageMode] = await Promise.all([
+  import("@/lib/pricing/pricing-matrix-store").then((m) => m.loadActivePricingRules()),
+  import("@/lib/pricing/pricing-matrix-store").then((m) => m.getPricingStorageMode())
+ ]);
 
  return (
   <main className={styles.page}>
    <DashboardHeader
     title="Tarification"
-    subtitle="Tarifs déterministes modifiables manuellement. Le prix n'est jamais calculé par l'IA."
+    subtitle="Modifiez les tarifs et paramètres du moteur calculer_devis(). Les changements s'appliquent aux prochains devis."
    />
-   <PricingSettingsEditor pricingRules={pricingRules} />
-   <Note>Toute modification d'un tarif doit être testée et auditée avant mise en production.</Note>
+   <PricingSettingsEditor initialRules={rules} storageMode={storageMode} />
+   <Note>Le prix client reste calculé de façon déterministe — jamais par l&apos;IA.</Note>
   </main>
  );
 }

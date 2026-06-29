@@ -1112,6 +1112,34 @@
  box-shadow: 0 14px 32px -14px rgba(5, 13, 31, 0.1);
 }
 
+.pricingToolbarActions {
+ display: flex;
+ flex-wrap: wrap;
+ align-items: center;
+ gap: 10px;
+}
+
+.feedbackOk,
+.feedbackError {
+ margin: 0;
+ padding: 12px 14px;
+ border-radius: 8px;
+ font-size: 14px;
+ line-height: 1.45;
+}
+
+.feedbackOk {
+ color: #05603a;
+ background: #ecfdf3;
+ border: 1px solid #abefc6;
+}
+
+.feedbackError {
+ color: #b42318;
+ background: #fef3f2;
+ border: 1px solid #fecdca;
+}
+
 .pricingToolbar strong,
 .pricingToolbar span {
  display: block;

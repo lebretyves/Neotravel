@@ -60,7 +60,7 @@ export function QuoteClientActions({
       }
     } catch {
       setState("error");
-      setErrorMessage("Action non finalisee. Reessayez ou contactez notre equipe.");
+      setErrorMessage("Action non finalisée. Réessayez ou contactez notre équipe.");
     }
   }
 
@@ -68,14 +68,14 @@ export function QuoteClientActions({
     return (
       <div className={styles.actionPanel}>
         <div className={styles.actions}>
-          <a className={styles.download} href={`/api/quotes/${quoteId}/pdf?lang=${downloadLanguage}`} data-i18n-key="Telecharger">
-            Telecharger PDF
+          <a className={styles.download} href={`/api/quotes/${quoteId}/pdf?lang=${downloadLanguage}`} data-i18n-key="Télécharger">
+            Télécharger PDF
           </a>
         </div>
         <p className={styles.actionMessage}>
           {alreadyClosed && state === "accepted"
-            ? "Ce devis a deja ete finalise."
-            : "Devis accepte. Notre equipe vous contactera sous 48h."}
+            ? "Ce devis a déjà été finalisé."
+            : "Devis accepté. Notre équipe vous contactera sous 48h."}
         </p>
       </div>
     );
@@ -84,7 +84,7 @@ export function QuoteClientActions({
   if (state === "refused") {
     return (
       <div className={styles.actionPanel}>
-        <p className={styles.actionMessage}>Devis refuse. Merci pour votre retour, notre equipe en prend note.</p>
+        <p className={styles.actionMessage}>Devis refusé. Merci pour votre retour, notre équipe en prend note.</p>
       </div>
     );
   }
@@ -92,8 +92,8 @@ export function QuoteClientActions({
   return (
     <div className={styles.actionPanel}>
       <div className={styles.actions}>
-        <a className={styles.download} href={`/api/quotes/${quoteId}/pdf?lang=${downloadLanguage}`} data-i18n-key="Telecharger">
-          Telecharger
+        <a className={styles.download} href={`/api/quotes/${quoteId}/pdf?lang=${downloadLanguage}`} data-i18n-key="Télécharger">
+          Télécharger
         </a>
         <button
           className={styles.primary}
@@ -119,7 +119,7 @@ export function QuoteClientActions({
       )}
       {state === "idle" && (
         <p className={styles.actionMessage}>
-          Vous pouvez telecharger, accepter ou refuser ce devis.
+          Vous pouvez télécharger, accepter ou refuser ce devis.
         </p>
       )}
     </div>

@@ -1,3 +1,3 @@
 export function QuotePdfPreview() {
-  return <section>Apercu PDF devis</section>;
+  return <section>Aperçu PDF devis</section>;
 }

@@ -139,7 +139,9 @@ describe("generateAssistantReply", () => {
       { generate },
     );
 
-    expect(reply).toBe("Je n’ai pas encore la ville de départ. Quelle est votre ville de départ ?");
+    expect(reply).toBe(
+      "Je n’ai pas encore la ville de départ. Pour commencer, quelle est votre ville de départ ?",
+    );
     expect(generate).not.toHaveBeenCalled();
   });
 

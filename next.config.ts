@@ -1,6 +1,15 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+
 const nextConfig: NextConfig = {
+  // Parent folder also has a package-lock.json; without this, Turbopack resolves
+  // node_modules from the wrong directory and @ai-sdk/openai appears missing.
+  turbopack: {
+    root: projectRoot,
+  },
   // The customer-email service reads its HTML templates at runtime via fs. This guarantees
   // Next traces them into the serverless function bundle (otherwise: ENOENT in production).
   outputFileTracingIncludes: {
