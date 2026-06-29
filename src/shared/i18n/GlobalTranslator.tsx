@@ -13,6 +13,12 @@ import {
 const textOriginals = new WeakMap<Text, string>();
 const attributeNames = ["aria-label", "alt", "placeholder", "title"] as const;
 
+const observerConfig: MutationObserverInit = {
+  childList: true,
+  subtree: true,
+  characterData: true
+};
+
 function normalizeText(value: string) {
   return value.replace(/\s+/g, " ").trim();
 }
@@ -58,6 +64,34 @@ function shouldSkipNode(node: Node) {
   return Boolean(parent.closest("script, style, noscript, code, pre, [data-no-translate]"));
 }
 
+function textChildNodes(element: HTMLElement) {
+  return Array.from(element.childNodes).filter((node): node is Text => node.nodeType === Node.TEXT_NODE);
+}
+
+/** Update visible text without replacing child nodes — keeps React's DOM references valid. */
+function setElementText(element: HTMLElement, nextValue: string) {
+  if (element.children.length > 0) return;
+
+  const nodes = textChildNodes(element);
+  if (nodes.length === 0) {
+    if (nextValue) element.appendChild(document.createTextNode(nextValue));
+    return;
+  }
+
+  if (nodes.length === 1) {
+    if (nodes[0].nodeValue !== nextValue) nodes[0].nodeValue = nextValue;
+    return;
+  }
+
+  const joined = nodes.map((node) => node.nodeValue ?? "").join("");
+  if (joined === nextValue) return;
+
+  nodes[0].nodeValue = nextValue;
+  for (let index = 1; index < nodes.length; index += 1) {
+    nodes[index].nodeValue = "";
+  }
+}
+
 function translateNode(node: Node, language: LanguageCode) {
   if (node.nodeType === Node.TEXT_NODE) {
     const textNode = node as Text;
@@ -78,19 +112,8 @@ function translateNode(node: Node, language: LanguageCode) {
   const translationKey = element.dataset.i18nKey;
   if (translationKey) {
     const nextValue = language === defaultLanguage ? translationKey : translateText(translationKey, language);
-    if (element.textContent !== nextValue) element.textContent = nextValue;
+    setElementText(element, nextValue);
     return;
-  }
-
-  if (element.children.length === 0) {
-    const originalKey = "data-i18n-original-text";
-    const value = element.textContent ?? "";
-    if (normalizeText(value)) {
-      if (!element.hasAttribute(originalKey)) element.setAttribute(originalKey, value);
-      const original = element.getAttribute(originalKey) ?? value;
-      const nextValue = language === defaultLanguage ? original : translateText(original, language);
-      if (nextValue !== value) element.textContent = nextValue;
-    }
   }
 
   for (const attribute of attributeNames) {
@@ -122,27 +145,40 @@ export function GlobalTranslator() {
 
   useEffect(() => {
     let currentLanguage = getLanguage();
-    applyLanguage(currentLanguage);
+    let isApplying = false;
+    let rafId = 0;
 
     const observer = new MutationObserver(() => {
-      window.requestAnimationFrame(() => applyLanguage(currentLanguage));
+      if (isApplying) return;
+      window.cancelAnimationFrame(rafId);
+      rafId = window.requestAnimationFrame(() => runApply());
     });
 
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      characterData: true
-    });
+    function runApply() {
+      if (isApplying) return;
+      isApplying = true;
+      observer.disconnect();
+      try {
+        applyLanguage(currentLanguage);
+      } finally {
+        isApplying = false;
+        observer.observe(document.body, observerConfig);
+      }
+    }
+
+    runApply();
 
     function handleLanguageChange(event: Event) {
       const detail = (event as CustomEvent<LanguageCode>).detail;
       currentLanguage = detail || getLanguage();
-      applyLanguage(currentLanguage);
+      runApply();
     }
 
+    observer.observe(document.body, observerConfig);
     window.addEventListener(languageChangeEvent, handleLanguageChange);
 
     return () => {
+      window.cancelAnimationFrame(rafId);
       observer.disconnect();
       window.removeEventListener(languageChangeEvent, handleLanguageChange);
     };

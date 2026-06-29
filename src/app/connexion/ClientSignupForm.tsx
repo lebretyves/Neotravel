@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import styles from "../connexion.module.css";
+import styles from "./connexion.module.css";
 
 export function ClientSignupForm() {
   const router = useRouter();

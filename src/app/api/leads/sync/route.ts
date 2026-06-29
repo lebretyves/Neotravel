@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { clientHumanReviewNotice } from "@/features/human-review/clientNotice";
 import { chatJson } from "../../../../lib/ai/chat-response";
 import { LeadQualificationSchema } from "../../../../lib/domain/schemas";
 import { createOrUpdateLead, detectMissingFields } from "../../../../lib/ai/tools";
@@ -97,24 +98,24 @@ export async function POST(request: Request): Promise<Response> {
     const blocking = warnings.some((warning) => warning.blocking);
 
     if (result.status === "HUMAN_REVIEW") {
+      const reviewReason = "INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE";
       return chatJson({
         status: "HUMAN_REVIEW",
-        message:
-          "Votre trajet comporte un arrêt intermédiaire. Notre équipe doit vérifier l'itinéraire avant de préparer le devis.",
+        message: clientHumanReviewNotice(reviewReason),
         leadId: result.leadId,
-        reviewReason: "INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE",
+        reviewReason,
         warnings,
       });
     }
 
     if (review === "PAX_OVER_85") {
       await markHumanReview(result.leadId, "PAX_OVER_85");
+      const reviewReason = "PAX_OVER_85";
       return chatJson({
         status: "HUMAN_REVIEW",
-        message:
-          "Votre demande dépasse notre capacité standard (85 passagers). Notre équipe vous contactera pour une solution adaptée.",
+        message: clientHumanReviewNotice(reviewReason),
         leadId: result.leadId,
-        reviewReason: "PAX_OVER_85",
+        reviewReason,
         warnings,
       });
     }

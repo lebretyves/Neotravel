@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PublicPageHeader } from "@/app/client/PublicPageShell";
+import { clientHumanReviewNotice } from "@/features/human-review/clientNotice";
 import { validateDemandCompleteness } from "@/features/demand/services/validateDemandCompleteness";
 import { localizedSendError } from "@/lib/ai/chat-locale";
 import { useSiteLanguage } from "@/shared/i18n/useSiteLanguage";
@@ -331,6 +332,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
   const [isRequestingHumanReview, setIsRequestingHumanReview] = useState(false);
   const [humanReviewQueued, setHumanReviewQueued] = useState(false);
   const [workflowError, setWorkflowError] = useState<string | null>(null);
+  const [reviewNotice, setReviewNotice] = useState<string | null>(null);
   const [userInput, setUserInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [currentLeadId, setCurrentLeadId] = useState<string | null>(null);
@@ -628,7 +630,10 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
 
       if (data.leadId) setCurrentLeadId(data.leadId);
       if (data.status === "QUALIFIED" && data.leadId) setQualifiedLeadId(data.leadId);
-      if (data.status === "HUMAN_REVIEW") setChatHumanReview(true);
+      if (data.status === "HUMAN_REVIEW") {
+        setChatHumanReview(true);
+        setReviewNotice(clientHumanReviewNotice((data as { reviewReason?: string }).reviewReason));
+      }
       const ef = data.extractedFields;
       if (ef) {
         if (ef.email) setChatEmail(ef.email);
@@ -676,6 +681,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
 
   async function generateClientQuote() {
     setWorkflowError(null);
+    setReviewNotice(null);
 
     if (hasBlockingWarning) {
       setWorkflowError("Corrigez les informations signalées avant de demander un devis.");
@@ -721,9 +727,18 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
         status: string;
         message: string;
         leadId?: string;
+        reviewReason?: string;
       };
+
+      if (sync.status === "HUMAN_REVIEW") {
+        if (sync.leadId) setCurrentLeadId(sync.leadId);
+        setChatHumanReview(true);
+        setReviewNotice(clientHumanReviewNotice(sync.reviewReason));
+        return;
+      }
+
       if (sync.status !== "QUALIFIED" || !sync.leadId) {
-        setWorkflowError(sync.message || "Il manque encore quelques informations pour préparer le devis.");
+        setWorkflowError(sync.message || "Il manque encore quelques informations pour finaliser votre demande.");
         return;
       }
       setCurrentLeadId(sync.leadId);
@@ -733,12 +748,31 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ leadId: sync.leadId }),
       });
-      if (!quoteResponse.ok) throw new Error("QUOTE_GENERATION_FAILED");
-      const quote = (await quoteResponse.json()) as { id: string };
+      const quotePayload = (await quoteResponse.json().catch(() => null)) as {
+        id?: string;
+        status?: string;
+        error?: string;
+      } | null;
+
+      if (!quoteResponse.ok) {
+        if (quotePayload?.status === "HUMAN_REVIEW") {
+          setChatHumanReview(true);
+          setReviewNotice(clientHumanReviewNotice(quotePayload.error));
+          return;
+        }
+        setWorkflowError("Nous n'avons pas pu finaliser votre devis pour l'instant. Vous pouvez réessayer ou nous contacter.");
+        return;
+      }
+
+      if (!quotePayload?.id) {
+        setWorkflowError("Nous n'avons pas pu finaliser votre devis pour l'instant. Vous pouvez réessayer ou nous contacter.");
+        return;
+      }
+
       clearDemandSession();
-      router.push(`/connexion/inscription?quoteId=${encodeURIComponent(quote.id)}`);
+      router.push(`/connexion/inscription?quoteId=${encodeURIComponent(quotePayload.id)}`);
     } catch {
-      setWorkflowError("Nous n’avons pas pu préparer le devis pour l’instant. Vous pouvez réessayer ou nous contacter.");
+      setWorkflowError("Nous n’avons pas pu finaliser votre devis pour l’instant. Vous pouvez réessayer ou nous contacter.");
     } finally {
       setIsGeneratingQuote(false);
     }
@@ -976,6 +1010,55 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
     });
   }
 
+  function renderQuoteValidationActions(
+    className: string,
+    { alwaysShowButton = false }: { alwaysShowButton?: boolean } = {}
+  ) {
+    const showQuoteButton = alwaysShowButton || chatHumanReview || formReady;
+
+    return (
+      <div className={className}>
+        {showQuoteButton ? (
+          chatHumanReview ? (
+            <button
+              className={styles.humanReviewButton}
+              type="button"
+              disabled={isRequestingHumanReview || humanReviewQueued}
+              onClick={() => void requestHumanReview()}
+            >
+              {humanReviewQueued
+                ? "Demande transmise"
+                : isRequestingHumanReview
+                  ? "Transmission en cours…"
+                  : "Transmettre à un conseiller"}
+            </button>
+          ) : (
+            <button
+              className={styles.primaryButton}
+              type="button"
+              disabled={isGeneratingQuote || hasBlockingWarning || !formReady}
+              onClick={() => void generateClientQuote()}
+            >
+              {isGeneratingQuote ? "Création du devis…" : "Recevoir mon devis"}
+            </button>
+          )
+        ) : null}
+        {hasBlockingWarning ? (
+          <p className={styles.workflowError}>{fieldWarnings.find((w) => w.blocking)?.message}</p>
+        ) : !formReady && hasAnyDemand ? (
+          <p className={styles.workflowHint}>Encore besoin de : {missingRequirementLabels.join(", ")}.</p>
+        ) : formReady && !reviewNotice ? (
+          <p className={styles.workflowReady}>Trajet complet — créez votre compte pour accéder au devis.</p>
+        ) : null}
+        {reviewNotice ? <p className={styles.workflowReview}>{reviewNotice}</p> : null}
+        {workflowError ? <p className={styles.workflowError}>{workflowError}</p> : null}
+        {humanReviewQueued ? (
+          <p className={styles.workflowReady}>Un commercial peut reprendre cette demande dans le dashboard.</p>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <main className={styles.page}>
       <PublicPageHeader />
@@ -1066,7 +1149,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
                     ? `Il manque encore : ${demoBlockingMissingFields.join(", ")}. Un conseiller pourra vérifier votre demande.`
                     : "Les informations de trajet sont suffisantes. Ajoutez le type de client, le nom du contact, le téléphone et l'email avant l'envoi."
                   : hasInitialDemand
-                    ? "Merci, les informations principales sont complètes pour préparer le devis. Indiquez aussi le type de client, le nom du contact et le téléphone."
+                    ? "Merci, les informations principales sont complètes pour finaliser votre devis. Indiquez aussi le type de client, le nom du contact et le téléphone."
                     : "Indiquez simplement votre départ, votre arrivée, la date, le nombre de passagers, puis le type de client, le nom du contact et le téléphone."}
               </p>
             </div>
@@ -1113,43 +1196,8 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
             >
               {isSending ? "Envoi en cours…" : "Envoyer mon message"}
             </button>
-            {chatHumanReview ? (
-              <button
-                className={styles.humanReviewButton}
-                type="button"
-                disabled={isRequestingHumanReview || humanReviewQueued}
-                onClick={() => void requestHumanReview()}
-              >
-                {humanReviewQueued
-                  ? "Demande transmise"
-                  : isRequestingHumanReview
-                    ? "Transmission en cours…"
-                    : "Transmettre à un conseiller"}
-              </button>
-            ) : formReady ? (
-              <button
-                className={styles.primaryButton}
-                type="button"
-                disabled={isGeneratingQuote}
-                onClick={() => void generateClientQuote()}
-              >
-                {isGeneratingQuote ? "Création du devis…" : "Recevoir mon devis"}
-              </button>
-            ) : null}
+            {renderQuoteValidationActions(styles.chatQuoteActions)}
           </div>
-          {hasBlockingWarning ? (
-            <p className={styles.workflowError}>{fieldWarnings.find((w) => w.blocking)?.message}</p>
-          ) : !formReady && hasAnyDemand ? (
-            <p className={styles.workflowHint}>
-              Encore besoin de : {missingRequirementLabels.join(", ")}.
-            </p>
-          ) : formReady ? (
-            <p className={styles.workflowReady}>Trajet complet - creez votre compte pour acceder au devis.</p>
-          ) : null}
-          {workflowError ? <p className={styles.workflowError}>{workflowError}</p> : null}
-          {humanReviewQueued ? (
-            <p className={styles.workflowReady}>Un commercial peut reprendre cette demande dans le dashboard.</p>
-          ) : null}
         </section>
 
         <div className={styles.sideStack}>
@@ -1443,6 +1491,8 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
               </div>
             </div>
           </details>
+
+          {renderQuoteValidationActions(styles.formSubmitActions, { alwaysShowButton: true })}
         </div>
       </div>
     </main>

@@ -1,3 +1,4 @@
+import { clientHumanReviewNotice } from "@/features/human-review/clientNotice";
 import { logAuditEvent } from "../../../lib/audit/audit-service";
 import { markHumanReview, updateLeadStatus } from "../../../lib/leads/lead-service";
 import { createServerSupabaseClient } from "../../../lib/supabase/server";
@@ -578,8 +579,5 @@ function fieldLabel(field: string) {
 }
 
 function reviewMessage(reason: string | null | undefined) {
-  if (reason === "PAX_OVER_85") return "Votre groupe dépasse la capacité standard. Un conseiller vérifie la solution adaptée.";
-  if (reason === "INTERMEDIATE_STOP_REQUIRES_MANUAL_ROUTE") return "Votre trajet comporte un arrêt intermédiaire. Un conseiller vérifie l’itinéraire avant devis.";
-  if (reason === "UNKNOWN_ROUTE_NO_DISTANCE") return "Cet itinéraire doit être vérifié manuellement avant devis.";
-  return "Un conseiller vérifie votre demande avant l’envoi du devis.";
+  return clientHumanReviewNotice(reason);
 }

@@ -18,6 +18,8 @@ export function handleApiError(error: unknown) {
     const status =
       error.code === "NOT_FOUND"
         ? 404
+        : error.code === "UNAUTHORIZED" || error.code === "INVALID_PASSWORD"
+          ? 401
         : error.code === "FORBIDDEN_QUOTE_STATUS" || error.code === "QUOTE_FINALIZED"
           ? 409
           : 400;

@@ -1,4 +1,5 @@
 import type { LanguageCode } from "@/shared/i18n/translations";
+import { clientHumanReviewNotice } from "@/features/human-review/clientNotice";
 
 export type ChatLanguage = LanguageCode;
 
@@ -351,6 +352,7 @@ const HUMAN_REVIEW: Record<ChatLanguage, Record<string, string>> = {
 };
 
 export function localizedHumanReviewMessage(reason: string, language: ChatLanguage): string {
+  if (language === "FR") return clientHumanReviewNotice(reason);
   const pack = HUMAN_REVIEW[language];
   return pack[reason] ?? pack.default;
 }

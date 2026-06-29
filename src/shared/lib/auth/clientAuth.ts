@@ -74,6 +74,45 @@ export function verifyClientCredentials(email: string, password: string) {
   return safeEqualHex(hashPassword(password, record.salt), record.hash);
 }
 
+export function updateClientPassword(email: string, currentPassword: string, newPassword: string) {
+  if (!verifyClientCredentials(email, currentPassword)) {
+    throw new Error("Mot de passe actuel incorrect.");
+  }
+
+  const records = readClients();
+  const index = records.findIndex((item) => item.email.toLowerCase() === email.toLowerCase());
+  if (index === -1) throw new Error("Compte introuvable.");
+
+  const salt = randomBytes(16).toString("hex");
+  records[index] = {
+    ...records[index],
+    salt,
+    hash: hashPassword(newPassword, salt),
+  };
+  writeClients(records);
+}
+
+export function updateClientAccountName(email: string, name: string | undefined) {
+  const records = readClients();
+  const index = records.findIndex((item) => item.email.toLowerCase() === email.toLowerCase());
+  if (index === -1) return;
+
+  const trimmed = name?.trim();
+  records[index] = {
+    ...records[index],
+    name: trimmed || undefined,
+  };
+  writeClients(records);
+}
+
+export function deleteClientAccountRecord(email: string, password: string) {
+  if (!verifyClientCredentials(email, password)) {
+    throw new Error("Mot de passe incorrect.");
+  }
+
+  writeClients(readClients().filter((item) => item.email.toLowerCase() !== email.toLowerCase()));
+}
+
 export function createClientSessionToken(email: string) {
   const payload = `${email}|${Date.now() + SESSION_TTL_MS}`;
   const sig = createHmac("sha256", getSecret()).update(payload).digest("hex");

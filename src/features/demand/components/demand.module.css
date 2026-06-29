@@ -401,6 +401,25 @@
   width: 100%;
 }
 
+.chatQuoteActions {
+  display: grid;
+  gap: 10px;
+}
+
+.formSubmitActions {
+  display: grid;
+  gap: 10px;
+  padding: 20px 24px;
+  border: 1px solid #cfe0ff;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff 0%, #f3f7ff 100%);
+}
+
+.formSubmitActions .primaryButton,
+.formSubmitActions .humanReviewButton {
+  width: 100%;
+}
+
 .primaryButton:disabled {
   cursor: wait;
   opacity: 0.72;
@@ -1039,6 +1058,18 @@
   background: #e9f9f0;
   font-size: 13px;
   font-weight: 800;
+}
+
+.workflowReview {
+  margin: -4px 0 0;
+  border: 1px solid #ffe0aa;
+  border-radius: 14px;
+  padding: 11px 13px;
+  color: #7a4d00;
+  background: #fff7e8;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.45;
 }
 
 .multiDestNote {
