@@ -5,6 +5,7 @@ export const CUSTOMER_EMAIL_SCENARIOS = [
   "DEMAND_INCOMPLETE",
   "DEMAND_IN_PROGRESS",
   "QUOTE_AVAILABLE",
+  "ACCOUNT_CREATION",
   "FOLLOWUP_J2",
   "FOLLOWUP_J7",
 ] as const;
@@ -23,6 +24,7 @@ const templateByScenario: Record<CustomerEmailScenario, string> = {
   DEMAND_INCOMPLETE: "00_demande_incomplete.html",
   DEMAND_IN_PROGRESS: "01_demande_en_cours.html",
   QUOTE_AVAILABLE: "02_devis_disponible.html",
+  ACCOUNT_CREATION: "05_creation_compte.html",
   FOLLOWUP_J2: "03_relance_j2.html",
   FOLLOWUP_J7: "04_relance_j7.html",
 };
@@ -31,6 +33,7 @@ const subjectFallbackByScenario: Record<CustomerEmailScenario, string> = {
   DEMAND_INCOMPLETE: "Informations nécessaires pour finaliser votre demande NeoTravel",
   DEMAND_IN_PROGRESS: "Votre demande NeoTravel est en cours d'étude",
   QUOTE_AVAILABLE: "Votre devis NeoTravel est disponible",
+  ACCOUNT_CREATION: "Creation de votre compte client NeoTravel",
   FOLLOWUP_J2: "Relance concernant votre devis NeoTravel",
   FOLLOWUP_J7: "Dernière relance concernant votre devis NeoTravel",
 };

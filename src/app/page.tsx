@@ -70,6 +70,9 @@ export default function HomePage() {
 
           <LanguageSelector />
           <AccessibilityWidget />
+          <Link className={styles.loginButton} href="/connexion">
+            Se connecter / S'inscrire
+          </Link>
         </div>
       </header>
 

@@ -128,11 +128,11 @@ export async function sendQuoteAvailableEmail(input: {
   }
 
   if (quote.status === "QUOTE_SENT" && !input.force) {
-    return skippedResult("QUOTE_AVAILABLE", lead, "QUOTE_ALREADY_SENT");
+    return skippedResult("ACCOUNT_CREATION", lead, "QUOTE_ALREADY_SENT");
   }
 
   const result = await sendEmail({
-    scenario: "QUOTE_AVAILABLE",
+    scenario: "ACCOUNT_CREATION",
     lead,
     quote,
     triggeredBy: input.triggeredBy ?? "dashboard",
@@ -148,7 +148,7 @@ export async function sendQuoteAvailableEmail(input: {
     return result;
   }
 
-  await updateLeadStatus(quote.lead_id, "QUOTE_SENT", { quoteId: quote.id, emailScenario: "QUOTE_AVAILABLE" });
+  await updateLeadStatus(quote.lead_id, "QUOTE_SENT", { quoteId: quote.id, emailScenario: "ACCOUNT_CREATION" });
   await scheduleFollowups({
     leadId: quote.lead_id,
     quoteId: quote.id,
@@ -329,8 +329,17 @@ async function sendEmail(input: {
     return skippedResult(input.scenario, input.lead, "EMAIL_ALREADY_SENT");
   }
 
-  const clientName = client?.organization ?? client?.name ?? email;
-  const values = buildTemplateValues({ lead: input.lead, quote: input.quote, followup: input.followup, clientName });
+  const contactName = client?.name ?? email;
+  const organizationName = client?.organization ?? "Particulier";
+  const clientName = contactName;
+  const values = buildTemplateValues({
+    lead: input.lead,
+    quote: input.quote,
+    followup: input.followup,
+    clientName,
+    contactName,
+    organizationName,
+  });
   const rendered = renderCustomerEmailTemplate(input.scenario, values);
   const payload: CustomerEmailPayload = {
     event: "customer_email",
@@ -356,7 +365,7 @@ async function sendEmail(input: {
           id: input.quote.id,
           reference: display(input.quote.quote_number),
           totalTtc: formatEuro(input.quote.price_ttc),
-          url: quoteUrl(input.quote.id),
+          url: accountLoginUrl(input.quote.id),
         }
       : undefined,
     followup: input.followup
@@ -448,9 +457,13 @@ function buildTemplateValues(input: {
   quote?: QuoteEmailRow;
   followup?: FollowupEmailRow;
   clientName: string;
+  contactName: string;
+  organizationName: string;
 }) {
   return {
     clientName: input.clientName,
+    contactName: input.contactName,
+    organizationName: input.organizationName,
     missingFields: (input.lead.missing_fields ?? []).map(fieldLabel).join(", ") || "Informations à confirmer",
     requestReference: input.lead.id.slice(0, 8).toUpperCase(),
     departureCity: display(input.lead.departure_city),
@@ -462,7 +475,9 @@ function buildTemplateValues(input: {
     quoteReference: display(input.quote?.quote_number),
     vehicle: display(vehicleLabel(input.quote?.breakdown)),
     totalTTC: formatEuro(input.quote?.price_ttc),
-    quoteUrl: input.quote ? quoteUrl(input.quote.id) : publicUrl("/client/demande"),
+    quoteUrl: input.quote ? accountLoginUrl(input.quote.id) : publicUrl("/connexion"),
+    accountCreationUrl: input.quote ? accountCreationUrl(input.quote.id) : publicUrl("/connexion/inscription"),
+    accountLoginUrl: input.quote ? accountLoginUrl(input.quote.id) : publicUrl("/connexion"),
     completionUrl: publicUrl(`/client/demande?leadId=${input.lead.id}`),
     validityDays: "7",
   };
@@ -535,8 +550,12 @@ function vehicleLabel(breakdown: Record<string, unknown> | null | undefined) {
   return typeof value === "string" ? value : "Autocar";
 }
 
-function quoteUrl(quoteId: string) {
-  return publicUrl(`/client/devis/${quoteId}`);
+function accountCreationUrl(quoteId: string) {
+  return publicUrl(`/connexion/inscription?quoteId=${encodeURIComponent(quoteId)}`);
+}
+
+function accountLoginUrl(quoteId: string) {
+  return publicUrl(`/connexion?quoteId=${encodeURIComponent(quoteId)}`);
 }
 
 function publicUrl(pathname: string) {

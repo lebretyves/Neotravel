@@ -19,8 +19,6 @@ const nextConfig: NextConfig = {
 
     return [
       { source: "/client", destination: "/", permanent: false },
-      { source: "/connexion", destination: "/", permanent: false },
-      { source: "/client/connexion", destination: "/", permanent: false },
       ...clientRoutes.map((route) => ({
         source: `/${route}`,
         destination: `/client/${route}`,

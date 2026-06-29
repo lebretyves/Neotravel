@@ -3,13 +3,13 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Relance concernant votre devis NeoTravel</title>
+    <title>Creation de votre compte client NeoTravel</title>
   </head>
   <body style="margin:0; padding:0; background:#eef3f8; color:#101828;">
-    <!-- Subject: Relance concernant votre devis NeoTravel -->
-    <!-- Preheader: Votre devis NeoTravel est toujours disponible. -->
+    <!-- Subject: Creation de votre compte client NeoTravel -->
+    <!-- Preheader: Votre devis sera accessible apres creation de votre compte client. -->
     <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
-      Votre devis NeoTravel est toujours disponible.
+      Votre devis sera accessible apres creation de votre compte client.
     </div>
 
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%; background:#eef3f8;">
@@ -34,7 +34,7 @@
                       </a>
                     </td>
                     <td align="right" valign="middle" style="font-family:Arial, Helvetica, sans-serif;">
-                      <span style="display:inline-block; padding:7px 11px; border:1px solid #cfe4ff; background:#eef6ff; color:#0b4ea2; font-size:12px; font-weight:bold;">Relance J+2</span>
+                      <span style="display:inline-block; padding:7px 11px; border:1px solid #bfd7ff; background:#edf5ff; color:#0b4ea2; font-size:12px; font-weight:bold;">Compte client</span>
                     </td>
                   </tr>
                 </table>
@@ -43,9 +43,10 @@
 
             <tr>
               <td style="padding:26px 28px 10px 28px; font-family:Arial, Helvetica, sans-serif;">
-                <h1 style="margin:0 0 10px 0; color:#061b3a; font-size:24px; line-height:1.25; font-weight:800;">Avez-vous pu consulter votre devis ?</h1>
-                <p style="margin:0 0 14px 0; color:#253044; font-size:15px; line-height:1.6;">Bonjour {{clientName}},</p>
-                <p style="margin:0 0 16px 0; color:#253044; font-size:15px; line-height:1.6;">Nous revenons vers vous concernant votre devis NeoTravel envoye recemment. A ce jour, nous n'avons pas encore recu de retour de votre part.</p>
+                <h1 style="margin:0 0 10px 0; color:#061b3a; font-size:24px; line-height:1.25; font-weight:800;">Creer votre compte client</h1>
+                <p style="margin:0 0 14px 0; color:#253044; font-size:15px; line-height:1.6;">Bonjour {{contactName}},</p>
+                <p style="margin:0 0 16px 0; color:#253044; font-size:15px; line-height:1.6;">Bienvenue dans votre espace NeoTravel. Vous aurez acces a vos demandes, devis, documents, messages et preferences de contact depuis un espace client securise.</p>
+                <p style="margin:0 0 16px 0; color:#253044; font-size:15px; line-height:1.6;">Votre devis NeoTravel est pret. Pour le consulter, vous devez d'abord creer votre compte client.</p>
               </td>
             </tr>
 
@@ -55,6 +56,9 @@
                   <tr>
                     <td style="padding:16px 18px; font-family:Arial, Helvetica, sans-serif; color:#10213f; font-size:14px; line-height:1.8;">
                       <strong>N devis :</strong> {{quoteReference}}<br>
+                      <strong>Reference demande :</strong> {{requestReference}}<br>
+                      <strong>Contact :</strong> {{contactName}}<br>
+                      <strong>Organisation :</strong> {{organizationName}}<br>
                       <strong>Trajet :</strong> {{departureCity}} &rarr; {{arrivalCity}}<br>
                       <strong>Date prevue :</strong> {{departureDate}}<br>
                       <strong>Passagers :</strong> {{passengers}}<br>
@@ -67,22 +71,23 @@
 
             <tr>
               <td align="center" style="padding:4px 28px 22px 28px;">
-                <a href="{{quoteUrl}}" style="display:inline-block; background:#061b3a; color:#ffffff; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.2; font-weight:bold; text-decoration:none; padding:12px 18px;">
-                  Acceder a mon espace client
+                <a href="{{accountCreationUrl}}" style="display:inline-block; background:#061b3a; color:#ffffff; font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:1.2; font-weight:bold; text-decoration:none; padding:12px 18px;">
+                  Creer mon compte et voir mon devis
                 </a>
               </td>
             </tr>
 
             <tr>
               <td style="padding:0 28px 28px 28px; font-family:Arial, Helvetica, sans-serif;">
-                <p style="margin:0 0 18px 0; color:#253044; font-size:15px; line-height:1.6;">Si votre projet est toujours d'actualite, vous pouvez confirmer votre devis ou nous indiquer les ajustements souhaites.</p>
+                <p style="margin:0 0 12px 0; color:#253044; font-size:15px; line-height:1.6;">Apres creation du compte, votre devis sera disponible dans l'onglet Mes devis de votre espace client.</p>
+                <p style="margin:0 0 12px 0; color:#253044; font-size:15px; line-height:1.6;">Vous avez deja un compte ? <a href="{{accountLoginUrl}}" style="color:#0b4ea2; font-weight:bold; text-decoration:none;">Connectez-vous a votre espace client</a>.</p>
                 <p style="margin:0; color:#253044; font-size:15px; line-height:1.7;">Bien cordialement,<br>L'equipe NeoTravel</p>
               </td>
             </tr>
 
             <tr>
               <td style="padding:18px 28px; background:#f7f9fc; border-top:1px solid #edf2f7; font-family:Arial, Helvetica, sans-serif; color:#667085; font-size:12px; line-height:1.5;">
-                <strong style="color:#061b3a;">NeoTravel</strong> - contact : <a href="mailto:contact@neotravel.fr" style="color:#0b4ea2; font-weight:bold; text-decoration:none;">contact@neotravel.fr</a>
+                <strong style="color:#061b3a;">NeoTravel</strong> - votre espace client est separe du dashboard interne NeoTravel.
               </td>
             </tr>
           </table>

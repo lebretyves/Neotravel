@@ -8,8 +8,8 @@ type StepState = "done" | "current" | "todo" | "blocked";
 type TimelineStep = {
  number: number;
  title: string;
+ status: string;
  detail: string;
- meta: string;
  state: StepState;
 };
 
@@ -23,16 +23,15 @@ export function LeadFollowupTimeline({
  followups: Followup[];
 }) {
  const sortedFollowups = [...followups].sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
- const sentCount = sortedFollowups.filter((followup) => followup.status !== "SCHEDULED").length;
  const urgency = classifyUrgency(lead.departureDate);
- const steps = buildTimelineSteps({ lead, quote, followups: sortedFollowups, sentCount, urgency });
+ const steps = buildSteps({ lead, quote, followups: sortedFollowups, urgency });
 
  return (
   <section className={styles.followupFlow} aria-labelledby="followup-timeline-title">
    <div className={styles.flowHead}>
     <div>
-     <p className={styles.kicker}>Suivi commercial</p>
-     <h2 id="followup-timeline-title">Timeline devis et relances</h2>
+     <p className={styles.kicker}>Suite du parcours</p>
+     <h2 id="followup-timeline-title">Devis et relances</h2>
     </div>
     <span className={styles.urgencyBadge} data-urgency={urgency.kind}>
      {urgency.label}
@@ -45,84 +44,85 @@ export function LeadFollowupTimeline({
       <span className={styles.followupStepNumber}>{step.number}</span>
       <div>
        <strong>{step.title}</strong>
+       <span className={styles.followupStatus}>{step.status}</span>
        <p>{step.detail}</p>
-       <small>{step.meta}</small>
       </div>
      </li>
     ))}
    </ol>
 
    <p className={styles.routingReason}>
-    <strong>Regle appliquee :</strong> {urgency.rule}
+    <strong>Regle :</strong> {urgency.rule}
    </p>
   </section>
  );
 }
 
-function buildTimelineSteps(input: {
+function buildSteps(input: {
  lead: Lead;
  quote?: Quote;
  followups: Followup[];
- sentCount: number;
  urgency: ReturnType<typeof classifyUrgency>;
 }): TimelineStep[] {
- const { lead, quote, followups, sentCount, urgency } = input;
-
- if (lead.status === "INCOMPLETE" || lead.status === "NEW" || (lead.missingFields?.length ?? 0) > 0) {
-  return [
-   step(1, "Informations a completer", "Le devis reste bloque tant que les champs obligatoires manquent.", missingLabel(lead), "current"),
-   step(2, "Devis non envoye", "Aucune relance commerciale n'est declenchee avant qualification.", "En attente", "todo"),
-   step(3, "Suivi a reprendre", "Le dossier peut etre archive si la demande reste non traitable.", "Action humaine possible", "todo"),
-  ];
- }
-
- if (urgency.kind === "very_urgent" || lead.status === "HUMAN_REVIEW") {
-  return [
-   step(1, "Validation humaine", "Le dossier doit etre repris avant tout engagement client.", reviewReason(lead, urgency), "current"),
-   step(2, "Decision commerciale", "Un commercial valide, corrige ou archive la demande.", quote ? "Devis existant a verifier" : "Aucun devis automatique", quote ? "current" : "todo"),
-   step(3, "Relance controlee", "Les relances automatiques ne doivent pas pousser un dossier sensible.", "Suivi manuel", "todo"),
-  ];
- }
-
- if (!quote) {
-  return [
-   step(1, "Devis a generer", "La demande est exploitable mais aucun devis n'est encore rattache.", "Action: generer le devis", "current"),
-   step(2, firstFollowupTitle(urgency), "La relance sera planifiee apres l'envoi du devis.", "Non programmee", "todo"),
-   step(3, finalStepTitle(urgency), finalStepDetail(urgency), "Non programme", "todo"),
-  ];
- }
-
- const quoteSent = quote.status === "QUOTE_SENT" || sentCount > 0 || lead.status.startsWith("FOLLOWUP");
+ const { lead, quote, followups, urgency } = input;
+ const incomplete = lead.status === "NEW" || lead.status === "INCOMPLETE" || (lead.missingFields?.length ?? 0) > 0;
+ const humanReview = lead.status === "HUMAN_REVIEW" || urgency.kind === "very_urgent";
+ const quoteSent = quote?.status === "QUOTE_SENT" || lead.status === "FOLLOWUP_1" || lead.status === "FOLLOWUP_2";
  const firstFollowup = followups[0];
  const secondFollowup = followups[1];
+
+ if (incomplete) {
+  return [
+   step(1, "Qualification", "A completer", missingFieldsLabel(lead), "current"),
+   step(2, "Devis", "Bloque", "Le devis ne doit pas etre genere tant que la demande est incomplete.", "blocked"),
+   step(3, "Suivi", "Pas de relance devis", "Relancer le client pour les infos manquantes ou archiver si non traitable.", "todo"),
+  ];
+ }
+
+ if (humanReview) {
+  const noAutomaticFollowup = urgency.kind === "very_urgent";
+  return [
+   step(1, "Qualification", "Validation humaine", lead.humanReviewReason ?? urgency.label, "current"),
+   step(2, "Devis", quote ? quoteStatus(quote) : "En attente", quote ? "Verifier le devis avant envoi." : "Aucun devis automatique avant validation.", quote ? "current" : "todo"),
+   step(
+    3,
+    "Relances",
+    noAutomaticFollowup ? "Aucune relance auto" : followupStatus({ urgency, firstFollowup, secondFollowup, lead, quoteSent }),
+    noAutomaticFollowup
+     ? "Depart < 48h : pas de relance automatique, reprise commerciale immediate."
+     : followupDetail({ urgency, firstFollowup, secondFollowup, lead, quoteSent }),
+    noAutomaticFollowup ? "blocked" : followupState({ firstFollowup, secondFollowup, lead, quoteSent }),
+   ),
+  ];
+ }
 
  return [
   step(
    1,
-   quoteSent ? "Devis envoye" : "Devis pret",
-   quoteSent ? "Le client a recu le devis, le suivi de relance est actif." : "Le devis existe mais n'a pas encore ete envoye au client.",
-   quote.calculation.quoteNumber,
-   quoteSent ? "done" : "current",
+   "Qualification",
+   "Exploitable",
+   "Les champs necessaires sont presents pour avancer vers devis.",
+   "done",
   ),
   step(
    2,
-   firstFollowupTitle(urgency),
-   firstFollowupDetail(urgency),
-   followupMeta(firstFollowup),
-   followupState(firstFollowup, quoteSent),
+   "Devis",
+   quote ? quoteStatus(quote) : "A generer",
+   quoteSent ? "Devis envoye au client." : quote ? "Devis pret, il reste a l'envoyer." : "Generer le devis depuis cette fiche.",
+   quoteSent ? "done" : "current",
   ),
   step(
    3,
-   finalStepTitle(urgency),
-   finalStepDetail(urgency),
-   finalStepMeta({ urgency, secondFollowup, firstFollowup, lead }),
-   finalStepState({ urgency, secondFollowup, sentCount, lead }),
+   "Relances",
+   followupStatus({ urgency, firstFollowup, secondFollowup, lead, quoteSent }),
+   followupDetail({ urgency, firstFollowup, secondFollowup, lead, quoteSent }),
+   followupState({ firstFollowup, secondFollowup, lead, quoteSent }),
   ),
  ];
 }
 
-function step(number: number, title: string, detail: string, meta: string, state: StepState): TimelineStep {
- return { number, title, detail, meta, state };
+function step(number: number, title: string, status: string, detail: string, state: StepState): TimelineStep {
+ return { number, title, status, detail, state };
 }
 
 function classifyUrgency(departureDate: string | null | undefined) {
@@ -130,7 +130,7 @@ function classifyUrgency(departureDate: string | null | undefined) {
   return {
    kind: "unknown" as const,
    label: "Urgence a confirmer",
-   rule: "Date de depart absente : pas de relance automatique fiable avant qualification.",
+   rule: "Date absente : pas de relance automatique fiable.",
   };
  }
 
@@ -138,8 +138,8 @@ function classifyUrgency(departureDate: string | null | undefined) {
  if (Number.isNaN(departure.getTime())) {
   return {
    kind: "unknown" as const,
-   label: "Urgence a confirmer",
-   rule: "Date de depart invalide : reprise ou correction necessaire.",
+   label: "Date a corriger",
+   rule: "Date invalide : correction avant devis ou relance.",
   };
  }
 
@@ -148,98 +148,100 @@ function classifyUrgency(departureDate: string | null | undefined) {
   return {
    kind: "unknown" as const,
    label: "Date depassee",
-   rule: "Date de depart passee : correction ou reprise humaine avant tout suivi commercial.",
+   rule: "Date passee : reprise humaine ou correction.",
   };
  }
 
- if (hours >= 0 && hours <= 48) {
+ if (hours <= 48) {
   return {
    kind: "very_urgent" as const,
    label: "Tres urgent < 48h",
-   rule: "Depart inferieur a 48h : HUMAN_REVIEW, aucune promesse automatique.",
+   rule: "Depart < 48h : HUMAN_REVIEW, pas d'engagement automatique.",
   };
  }
 
- if (hours > 48 && hours <= 7 * 24) {
+ if (hours <= 7 * 24) {
   return {
    kind: "urgent" as const,
    label: "Urgent 48h-7j",
-   rule: "Depart entre 48h et 7 jours : une relance J+2, puis controle humain si silence.",
+   rule: "Depart 48h-7j : devis possible, une relance J+2, puis reprise humaine si silence.",
   };
  }
 
  return {
   kind: "standard" as const,
   label: "Standard > 7j",
-  rule: "Depart au-dela de 7 jours : relances J+3 et J+7, puis CLOSED 7 jours apres la seconde relance.",
+  rule: "Depart > 7j : relances J+3 puis J+7, puis CLOSED 7 jours apres la seconde relance.",
  };
 }
 
-function firstFollowupTitle(urgency: ReturnType<typeof classifyUrgency>) {
- return urgency.kind === "urgent" ? "Relance J+2" : "Relance 1";
+function quoteStatus(quote: Quote) {
+ if (quote.status === "QUOTE_READY") return "Pret";
+ if (quote.status === "QUOTE_SENT") return "Envoye";
+ if (quote.status === "ACCEPTED") return "Accepte";
+ if (quote.status === "REFUSED") return "Refuse";
+ return "Cloture";
 }
 
-function firstFollowupDetail(urgency: ReturnType<typeof classifyUrgency>) {
- if (urgency.kind === "urgent") return "Une seule relance automatique est prevue pour eviter une pression excessive.";
- return "Premiere relance automatique apres devis envoye.";
-}
-
-function finalStepTitle(urgency: ReturnType<typeof classifyUrgency>) {
- return urgency.kind === "urgent" ? "Controle humain" : "Relance 2 / cloture";
-}
-
-function finalStepDetail(urgency: ReturnType<typeof classifyUrgency>) {
- if (urgency.kind === "urgent") return "Sans reponse apres la relance urgente, le dossier repasse en validation humaine.";
- return "Deuxieme relance, puis fermeture automatique apres delai de grace si aucun retour.";
-}
-
-function followupMeta(followup: Followup | undefined) {
- if (!followup) return "Aucune relance planifiee";
- return `${followup.status === "SCHEDULED" ? "Prevue" : "Envoyee"} le ${formatDate(followup.dueAt)}`;
-}
-
-function followupState(followup: Followup | undefined, quoteSent: boolean): StepState {
- if (!quoteSent) return "todo";
- if (!followup) return "current";
- return followup.status === "SCHEDULED" ? "current" : "done";
-}
-
-function finalStepMeta(input: {
+function followupStatus(input: {
  urgency: ReturnType<typeof classifyUrgency>;
- secondFollowup?: Followup;
  firstFollowup?: Followup;
- lead: Lead;
-}) {
- if (input.lead.status === "CLOSED") return "Dossier cloture";
- if (input.urgency.kind === "urgent") {
-  if (input.lead.status === "HUMAN_REVIEW") return "En reprise humaine";
-  return input.firstFollowup ? "Controle apres relance J+2" : "En attente relance J+2";
- }
- return followupMeta(input.secondFollowup);
-}
-
-function finalStepState(input: {
- urgency: ReturnType<typeof classifyUrgency>;
  secondFollowup?: Followup;
- sentCount: number;
  lead: Lead;
+ quoteSent: boolean;
+}) {
+ if (!input.quoteSent) return "En attente devis";
+ if (input.lead.status === "CLOSED") return "Cloture";
+ if (input.lead.status === "LOST") return "Perdu";
+ if (input.urgency.kind === "very_urgent") return "Aucune relance auto";
+ if (input.urgency.kind === "urgent") return input.firstFollowup ? followupShortLabel(input.firstFollowup, "J+2") : "J+2 a venir";
+ if (input.secondFollowup) return followupShortLabel(input.secondFollowup, "J+7");
+ if (input.firstFollowup) return followupShortLabel(input.firstFollowup, "J+3");
+ return "A planifier";
+}
+
+function followupDetail(input: {
+ urgency: ReturnType<typeof classifyUrgency>;
+ firstFollowup?: Followup;
+ secondFollowup?: Followup;
+ lead: Lead;
+ quoteSent: boolean;
+}) {
+ if (!input.quoteSent) return "Le suivi demarre apres envoi du devis.";
+ if (input.lead.status === "CLOSED") return "Dossier ferme apres absence de reponse.";
+ if (input.urgency.kind === "urgent") return "Une seule relance J+2, puis controle humain si pas de retour.";
+ if (input.secondFollowup?.status === "SENT") return "Relance J+7 envoyee : attendre 7 jours puis cloturer si silence.";
+ if (input.firstFollowup?.status === "SENT") return "Premiere relance envoyee : prochaine etape J+7.";
+ return "Relances standard : J+3 puis J+7.";
+}
+
+function followupState(input: {
+ firstFollowup?: Followup;
+ secondFollowup?: Followup;
+ lead: Lead;
+ quoteSent: boolean;
 }): StepState {
+ if (!input.quoteSent) return "todo";
  if (input.lead.status === "CLOSED" || input.lead.status === "LOST") return "done";
- if (input.urgency.kind === "urgent") return input.lead.status === "HUMAN_REVIEW" ? "current" : "todo";
- if (!input.secondFollowup) return input.sentCount >= 1 ? "current" : "todo";
- return input.secondFollowup.status === "SCHEDULED" ? "current" : "done";
+ const active = input.secondFollowup ?? input.firstFollowup;
+ if (!active) return "current";
+ if (active.status === "SCHEDULED" && new Date(active.dueAt).getTime() < Date.now()) return "blocked";
+ return active.status === "SCHEDULED" ? "current" : "done";
 }
 
-function missingLabel(lead: Lead) {
- return (lead.missingFields?.length ?? 0) > 0 ? `${lead.missingFields!.length} champ(s) manquant(s)` : "Qualification initiale";
+function followupShortLabel(followup: Followup, label: string) {
+ const date = formatDate(followup.dueAt);
+ if (followup.status === "SCHEDULED" && new Date(followup.dueAt).getTime() < Date.now()) return `${label} en retard`;
+ return followup.status === "SCHEDULED" ? `${label} prevu ${date}` : `${label} envoye ${date}`;
 }
 
-function reviewReason(lead: Lead, urgency: ReturnType<typeof classifyUrgency>) {
- return lead.humanReviewReason ?? urgency.label;
+function missingFieldsLabel(lead: Lead) {
+ const count = lead.missingFields?.length ?? 0;
+ return count > 0 ? `${count} champ(s) manquant(s)` : "Informations manquantes";
 }
 
 function formatDate(value: string) {
  const date = new Date(value);
  if (Number.isNaN(date.getTime())) return value;
- return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
+ return new Intl.DateTimeFormat("fr-FR", { day: "2-digit", month: "2-digit" }).format(date);
 }
