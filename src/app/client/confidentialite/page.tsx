@@ -6,11 +6,11 @@ export default function ConfidentialitePage() {
     <main className={styles.page}>
       <PublicPageHeader />
       <section className={styles.hero}>
-        <p className={styles.kicker}>Confidentialite & RGPD</p>
-        <h1>Vos donnees servent uniquement au traitement de votre demande</h1>
+        <p className={styles.kicker}>Confidentialité & RGPD</p>
+        <h1>Vos données servent uniquement au traitement de votre demande</h1>
         <p>
-          NeoTravel limite l&apos;usage des informations au devis, au suivi commercial, aux relances et a la reprise humaine
-          lorsque le dossier le necessite.
+          NeoTravel limite l&apos;usage des informations au devis, au suivi commercial, aux relances et à la reprise humaine
+          lorsque le dossier le nécessite.
         </p>
       </section>
 

@@ -15,7 +15,7 @@ import { getStaffSession, isAdminRoleAuthorized } from "@/shared/lib/auth/requir
 
 export type GovernanceResult = { ok: boolean; error?: string; message?: string };
 
-const GOVERNANCE_PATH = "/dashboard/equipe-roles";
+const GOVERNANCE_PATH = "/dashboard/gouvernance";
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 function normalizeRole(role: string): StaffRole {

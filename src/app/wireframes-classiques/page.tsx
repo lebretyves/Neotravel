@@ -4,7 +4,7 @@ const flowSteps = [
   "Landing",
   "Demande prospect",
   "Qualification IA",
-  "Controle metier",
+  "Contrôle métier",
   "Calculer devis",
   "Suivi commercial"
 ];
@@ -12,39 +12,39 @@ const flowSteps = [
 const screens = [
   {
     title: "1. Landing commerciale",
-    subtitle: "Entree du parcours client.",
+    subtitle: "Entrée du parcours client.",
     status: "CTA vers demande",
     blocks: [
       "Nom ou organisation",
       "Email",
-      "Depart / arrivee",
-      "Date depart / retour",
+      "Départ / arrivée",
+      "Date départ / retour",
       "Message libre prospect"
     ],
-    actions: ["Demarrer ma demande", "Connexion equipe"]
+    actions: ["Démarrer ma demande", "Connexion équipe"]
   },
   {
     title: "2. Demande prospect / conversation",
-    subtitle: "Le client decrit son besoin.",
+    subtitle: "Le client décrit son besoin.",
     status: "INCOMPLETE si champs manquants",
     blocks: [
       "Message prospect",
       "Questions IA",
-      "Infos detectees",
+      "Infos détectées",
       "Infos manquantes",
       "Recevoir mon devis"
     ],
-    actions: ["Recevoir mon devis", "Completer"]
+    actions: ["Recevoir mon devis", "Compléter"]
   },
   {
     title: "3. Devis client",
-    subtitle: "Proposition apres calcul deterministe.",
-    status: "Prix calcule par regles metier",
+    subtitle: "Proposition après calcul déterministe.",
+    status: "Prix calculé par règles métier",
     blocks: [
       "Trajet + date",
       "Passagers + options",
-      "Montant calcule",
-      "Prix calcule par regles metier",
+      "Montant calculé",
+      "Prix calculé par règles métier",
       "Accepter / Refuser / Modifier"
     ],
     actions: ["Accepter", "Refuser", "Modifier"]
@@ -56,16 +56,16 @@ const screens = [
     blocks: [
       "Liste des demandes",
       "Statuts",
-      "Priorite / urgence",
+      "Priorité / urgence",
       "Prochaine relance",
-      "Cout IA / appels"
+      "Coût IA / appels"
     ],
     actions: ["Voir demande", "Human review"]
   },
   {
     title: "5. Fiche demande",
-    subtitle: "Detail d'une demande.",
-    status: "Detail lead",
+    subtitle: "Détail d'une demande.",
+    status: "Détail lead",
     blocks: [
       "Infos prospect",
       "Trajet",
@@ -80,9 +80,9 @@ const screens = [
     subtitle: "Reprise commerciale.",
     status: "HUMAN_REVIEW",
     blocks: [
-      "Demandes bloquees",
+      "Demandes bloquées",
       "Raison du blocage",
-      "Resume IA",
+      "Résumé IA",
       "Action attendue",
       "Reprendre / escalader"
     ],
@@ -90,42 +90,42 @@ const screens = [
   },
   {
     title: "7. Relances",
-    subtitle: "Suivi apres envoi du devis.",
+    subtitle: "Suivi après envoi du devis.",
     status: "Relance email",
     blocks: [
-      "Relances prevues",
-      "Relances envoyees",
+      "Relances prévues",
+      "Relances envoyées",
       "Canal email",
-      "Statut reponse",
+      "Statut réponse",
       "Lien demande"
     ],
-    actions: ["Marquer envoyee", "Replanifier"]
+    actions: ["Marquer envoyée", "Replanifier"]
   },
   {
     title: "8. Partenaires autocaristes",
-    subtitle: "Disponibilite indicative.",
+    subtitle: "Disponibilité indicative.",
     status: "Pas de flotte interne",
     blocks: [
       "Liste partenaires",
       "Zones desservies",
-      "Capacites indicatives",
-      "Statut a confirmer",
-      "Agenda apres selection"
+      "Capacités indicatives",
+      "Statut à confirmer",
+      "Agenda après sélection"
     ],
     actions: ["Poser option", "Confirmer commercial"]
   },
   {
     title: "9. Admin pricing / audit",
-    subtitle: "Controle interne.",
-    status: "Audit et regles",
+    subtitle: "Contrôle interne.",
+    status: "Audit et règles",
     blocks: [
-      "Regles pricing",
+      "Règles pricing",
       "Route pricing",
       "Audit logs",
       "Model runs",
       "Actions n8n"
     ],
-    actions: ["Voir regles", "Voir logs"]
+    actions: ["Voir règles", "Voir logs"]
   }
 ];
 
@@ -182,20 +182,20 @@ export default function ClassicWireframesPage() {
         ))}
       </section>
 
-      <section className={styles.grid} aria-label="Ecrans wireframes">
+      <section className={styles.grid} aria-label="Écrans wireframes">
         {screens.map((screen) => (
           <MiniScreen key={screen.title} {...screen} />
         ))}
       </section>
 
       <section className={styles.notes}>
-        <h2>Regles de lecture</h2>
+        <h2>Règles de lecture</h2>
         <ul>
           <li>Le prix vient uniquement de calculer_devis().</li>
           <li>La distance vient d&apos;une source auditable, jamais du LLM.</li>
           <li>Les cas incomplets bloquent le devis.</li>
           <li>Les cas complexes passent en HUMAN_REVIEW.</li>
-          <li>NeoTravel gere des partenaires, pas une flotte interne.</li>
+          <li>NeoTravel gère des partenaires, pas une flotte interne.</li>
         </ul>
       </section>
     </main>

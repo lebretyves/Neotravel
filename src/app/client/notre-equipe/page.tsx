@@ -7,10 +7,10 @@ export default function NotreEquipePage() {
     <main className={styles.page}>
       <PublicPageHeader />
       <section className={styles.hero}>
-        <p className={styles.kicker}>Notre equipe</p>
-        <h1>L&apos;equipe projet NeoTravel</h1>
+        <p className={styles.kicker}>Notre équipe</p>
+        <h1>L&apos;équipe projet NeoTravel</h1>
         <p>
-          Une equipe projet IT chargee de concevoir un parcours clair, auditable et demonstrable pour la soutenance
+          Une équipe projet IT chargée de concevoir un parcours clair, auditable et démontrable pour la soutenance
           Epitech 2026.
         </p>
       </section>
@@ -19,7 +19,7 @@ export default function NotreEquipePage() {
         <Image
           className={styles.teamImage}
           src="/images/equipe/neotravel-equipe.jpg"
-          alt="Equipe projet NeoTravel"
+          alt="Équipe projet NeoTravel"
           width={1600}
           height={900}
           priority

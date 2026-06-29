@@ -284,8 +284,11 @@ export function GovernancePanel({
       <header className={dashStyles.header}>
         <div>
           <p className={dashStyles.eyebrow}>Gouvernance</p>
-          <h1>Équipe &amp; accès</h1>
-          <p>Gérez les comptes et activez chaque accès par interrupteur. L&apos;administrateur a tous les droits.</p>
+          <h1>Gouvernance — équipe &amp; accès</h1>
+          <p>
+            Deux rôles : <strong>Administrateur</strong> (accès complet) et <strong>Commercial</strong> (onglets
+            commerciaux uniquement). Changez les rôles et activez les permissions par interrupteur.
+          </p>
         </div>
       </header>
 

@@ -20,8 +20,8 @@ export default async function PricingPage() {
       </header>
 
       <p className={styles.notice}>
-        Edition temps reel des regles desactivee pour le MVP. Une modification post-MVP devra passer par validation,
-        tests pricing et audit log.
+        Consultation des matrices. Pour modifier les tarifs en temps réel, utilisez le tableau de bord :{" "}
+        <a href="/dashboard/pricing">Tarification</a>.
       </p>
 
       <div className={styles.grid}>

@@ -30,7 +30,7 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: "quotes", label: "Devis", section: "Traitement", defaultForCommercial: true },
   { key: "agenda", label: "Agenda", section: "Traitement", defaultForCommercial: true },
   { key: "partners", label: "Partenaires autocars", section: "Partenaires & équipe", defaultForCommercial: false },
-  { key: "team", label: "Gestion de l'équipe", section: "Partenaires & équipe", defaultForCommercial: false },
+  { key: "team", label: "Gouvernance (équipe & accès)", section: "Gouvernance", defaultForCommercial: false },
   { key: "admin_view", label: "Vue admin", section: "Pilotage", defaultForCommercial: false },
   { key: "pricing", label: "Tarification", section: "Pilotage", defaultForCommercial: false },
   { key: "automations", label: "Automatisations", section: "Pilotage", defaultForCommercial: false },
@@ -50,6 +50,9 @@ export const PERMISSION_SECTIONS: string[] = PERMISSIONS.reduce<string[]>((secti
   if (!sections.includes(permission.section)) sections.push(permission.section);
   return sections;
 }, []);
+
+/** Onglets visibles par défaut pour un rôle commercial (traitement uniquement). */
+export const COMMERCIAL_SIDEBAR_PERMISSIONS = DEFAULT_COMMERCIAL_PERMISSIONS;
 
 export function isPermissionKey(value: string): value is PermissionKey {
   return (ALL_PERMISSION_KEYS as string[]).includes(value);

@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { PublicPageHeader } from "@/app/client/PublicPageShell";
 import { validateDemandCompleteness } from "@/features/demand/services/validateDemandCompleteness";
+import { localizedSendError } from "@/lib/ai/chat-locale";
+import { useSiteLanguage } from "@/shared/i18n/useSiteLanguage";
 import {
   PAX_MAX,
   isPastDate,
@@ -289,6 +291,7 @@ function clearDemandSession() {
 
 export function DemandConversation({ initialDemand = {} }: { initialDemand?: InitialDemand }) {
   const router = useRouter();
+  const language = useSiteLanguage();
   const hasInitialDemand = Boolean(
     initialDemand.departure?.trim() ||
       initialDemand.arrival?.trim() ||
@@ -595,6 +598,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: nextMessages.map((m) => ({ role: m.role, content: m.content })),
+          language,
           ...(currentLeadId ? { leadId: currentLeadId } : {}),
         }),
       });
@@ -655,7 +659,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
         ...prev,
         {
           role: "assistant",
-          content: "Je n’ai pas pu envoyer votre message. Réessayez dans un instant, ou contactez-nous si besoin.",
+          content: localizedSendError(language),
         },
       ]);
     } finally {
@@ -966,20 +970,8 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
   }
 
   return (
-    <main className={styles.page} data-no-translate translate="no">
-      <header className={styles.topbar}>
-        <Link className={styles.logo} href="/" aria-label="NeoTravel accueil">
-          <Image className={styles.logoImage} src="/logo-neotravel-v12.svg" alt="" width={250} height={72} priority />
-        </Link>
-
-        <nav className={styles.nav} aria-label="Navigation principale">
-          <Link href="/#estimation">Estimation</Link>
-          <Link href="/#projets">Vos projets</Link>
-          <Link href="/client/partenaires">Partenaires</Link>
-          <Link href="/#engagements">Engagements</Link>
-        </nav>
-
-      </header>
+    <main className={styles.page}>
+      <PublicPageHeader />
 
       <section className={styles.hero}>
         <div>
@@ -1027,7 +1019,7 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
               </button>
             ) : null}
           </div>
-          <div ref={chatMessagesRef} className={styles.chatMessages}>
+          <div ref={chatMessagesRef} className={styles.chatMessages} data-no-translate translate="no">
             {hasInitialDemand ? (
               <>
                 <div className={`${styles.message} ${styles.prospect}`}>
@@ -1377,11 +1369,11 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
 
           <details className={`${styles.sidePanel} ${styles.collapsiblePanel}`}>
             <summary className={styles.collapsibleSummary}>
-              <span id="contact-panel-title">Vos coordonnees</span>
+              <span id="contact-panel-title">Vos coordonnées</span>
               <small>
                 {chatEmail || activeDemand.phone || activeDemand.contactName
                   ? "Coordonnées renseignées — modifier"
-                  : "À compléter avant l’envoi"}
+                  : "À compléter avant l'envoi"}
               </small>
             </summary>
 
@@ -1398,8 +1390,8 @@ export function DemandConversation({ initialDemand = {} }: { initialDemand?: Ini
                     <option value="Entreprise">Entreprise</option>
                     <option value="Association">Association</option>
                     <option value="Agence">Agence</option>
-                    <option value="Ecole">Ecole</option>
-                    <option value="Collectivite">Collectivite</option>
+                    <option value="École">École</option>
+                    <option value="Collectivité">Collectivité</option>
                   </select>
                 </label>
                 <label>
