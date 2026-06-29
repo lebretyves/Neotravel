@@ -711,6 +711,9 @@
 
 .routePreview {
   display: grid;
+  order: -1;
+  position: sticky;
+  top: 18px;
   gap: 18px;
   padding: 24px;
 }
@@ -900,6 +903,10 @@
   .progressCard,
   .layout {
     grid-template-columns: 1fr;
+  }
+
+  .routePreview {
+    position: static;
   }
 }
 

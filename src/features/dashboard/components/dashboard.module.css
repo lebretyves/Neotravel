@@ -995,6 +995,42 @@
  border-color: #dfe4ea;
 }
 
+.priorityBadge {
+ display: inline-flex;
+ align-items: center;
+ border-radius: 999px;
+ padding: 5px 10px;
+ border: 1px solid transparent;
+ font-size: 11px;
+ font-weight: 900;
+ line-height: 1.2;
+ white-space: nowrap;
+}
+
+.priorityBadge[data-tone="critical"] {
+ color: #b3261e;
+ background: #fdecec;
+ border-color: #f4b8b8;
+}
+
+.priorityBadge[data-tone="warning"] {
+ color: #8a5a06;
+ background: #fdf1d9;
+ border-color: #edcf8b;
+}
+
+.priorityBadge[data-tone="info"] {
+ color: #0b4f8a;
+ background: #e6f1fb;
+ border-color: #b7d7f0;
+}
+
+.priorityBadge[data-tone="muted"] {
+ color: #5b6573;
+ background: #eef1f5;
+ border-color: #d1d8e1;
+}
+
 .sideStack {
  display: grid;
  gap: 18px;

@@ -64,6 +64,14 @@ type LeadPriorityBucket = {
  tone: "critical" | "warning" | "info" | "muted";
 };
 
+function PriorityBadge({ priority }: { priority: LeadPriorityBucket }) {
+ return (
+  <span className={styles.priorityBadge} data-tone={priority.tone}>
+   {priority.label}
+  </span>
+ );
+}
+
 function leadPriorityBucket(lead: Lead, quote?: Quote): LeadPriorityBucket {
  if (lead.status === "HUMAN_REVIEW") {
   return { rank: 1, label: "1 - À valider urgent", tone: "critical" };
@@ -389,7 +397,7 @@ export async function CommercialLeadsPage({ status }: { status?: string }) {
        const priority = leadPriorityBucket(lead, quote);
        return {
         cells: [
-         priority.label,
+         <PriorityBadge key="priority" priority={priority} />,
          leadDisplayName(lead),
          leadRouteLabel(lead),
          <StatusBadge key="s" status={lead.status} />,
