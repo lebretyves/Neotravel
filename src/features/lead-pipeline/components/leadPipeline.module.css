@@ -1,4 +1,5 @@
 .flow,
+.followupFlow,
 .logCard {
  border: 1px solid #e3e9f1;
  border-radius: 10px;
@@ -6,7 +7,8 @@
  box-shadow: 0 12px 28px -18px rgba(5, 13, 31, 0.16);
 }
 
-.flow {
+.flow,
+.followupFlow {
  padding: 20px 22px;
  margin-bottom: 22px;
 }
@@ -135,6 +137,131 @@
 
 .routingReason strong {
  color: #1f2a3d;
+}
+
+.urgencyBadge {
+ display: inline-flex;
+ align-items: center;
+ border: 1px solid #dbe6fb;
+ border-radius: 999px;
+ padding: 6px 12px;
+ color: #123885;
+ background: #eef4ff;
+ font-size: 11px;
+ font-weight: 900;
+ white-space: nowrap;
+}
+
+.urgencyBadge[data-urgency="very_urgent"] {
+ color: #b3261e;
+ background: #fdecec;
+ border-color: #f7cdcd;
+}
+
+.urgencyBadge[data-urgency="urgent"] {
+ color: #8a5a06;
+ background: #fff8e7;
+ border-color: #f1ddae;
+}
+
+.urgencyBadge[data-urgency="standard"] {
+ color: #0b7a4b;
+ background: #e3f6ec;
+ border-color: #c3ead4;
+}
+
+.followupStepper {
+ display: grid;
+ grid-template-columns: repeat(3, minmax(0, 1fr));
+ gap: 12px;
+ margin: 0;
+ padding: 0;
+ list-style: none;
+}
+
+.followupStep {
+ position: relative;
+ display: grid;
+ grid-template-columns: 34px 1fr;
+ gap: 12px;
+ min-height: 132px;
+ border: 1px solid #e8eef7;
+ border-radius: 9px;
+ padding: 14px;
+ background: #f7faff;
+}
+
+.followupStep:not(:last-child)::after {
+ position: absolute;
+ top: 31px;
+ right: -17px;
+ width: 20px;
+ height: 2px;
+ background: #dbe4f0;
+ content: "";
+}
+
+.followupStepNumber {
+ display: grid;
+ width: 30px;
+ height: 30px;
+ place-items: center;
+ border-radius: 999px;
+ color: #637188;
+ background: #e2e8f2;
+ font-size: 12px;
+ font-weight: 900;
+}
+
+.followupStep strong {
+ display: block;
+ color: #1f2a3d;
+ font-size: 14px;
+ line-height: 1.25;
+}
+
+.followupStep p {
+ margin: 6px 0 8px;
+ color: #5b6573;
+ font-size: 12px;
+ line-height: 1.45;
+}
+
+.followupStep small {
+ color: #7c8aa0;
+ font-size: 11px;
+ font-weight: 800;
+ line-height: 1.35;
+}
+
+.followupStep[data-state="done"] {
+ background: #eef4ff;
+ border-color: #dbe6fb;
+}
+
+.followupStep[data-state="done"] .followupStepNumber {
+ color: #ffffff;
+ background: #123885;
+}
+
+.followupStep[data-state="current"] {
+ background: #fff8e7;
+ border-color: #f1ddae;
+}
+
+.followupStep[data-state="current"] .followupStepNumber {
+ color: #ffffff;
+ background: #c49a43;
+}
+
+.followupStep[data-state="blocked"] {
+ background: #fdecec;
+ border-color: #f7cdcd;
+}
+
+.followupStep[data-state="blocked"] .followupStepNumber {
+ color: #ffffff;
+ background: #b3261e;
 }
 
 .logCard {
@@ -289,5 +416,13 @@
 @media (max-width: 760px) {
  .stepper {
   grid-template-columns: repeat(2, 1fr);
+ }
+
+ .followupStepper {
+  grid-template-columns: 1fr;
+ }
+
+ .followupStep:not(:last-child)::after {
+  display: none;
  }
 }

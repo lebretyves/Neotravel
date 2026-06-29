@@ -7,6 +7,7 @@ import { LeadReviewActions } from "@/features/lead-detail/components/LeadReviewA
 import { LeadArchiveAction } from "@/features/lead-detail/components/LeadArchiveAction";
 import { LeadProcessFlow } from "@/features/lead-pipeline/components/LeadProcessFlow";
 import { LeadActivityTimeline } from "@/features/lead-pipeline/components/LeadActivityTimeline";
+import { LeadFollowupTimeline } from "@/features/lead-pipeline/components/LeadFollowupTimeline";
 import { getLeadDetail } from "@/features/lead-detail/services/getLeadDetail";
 import styles from "@/features/lead-detail/components/lead-detail.module.css";
 import { requirePermission } from "@/shared/lib/auth/requireAdmin";
@@ -36,11 +37,13 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ lea
 
  const quote = latestQuoteByLeadId(quotes).get(lead.id);
  const followup = nextScheduledFollowup(lead.id, followups);
+ const leadFollowups = followups.filter((item) => item.leadId === lead.id);
 
  return (
   <main className={styles.page}>
    <LeadHeader lead={lead} quote={quote} followup={followup} />
    <LeadProcessFlow lead={lead} />
+   <LeadFollowupTimeline lead={lead} quote={quote} followups={leadFollowups} />
    <LeadReviewActions lead={lead} />
    <LeadArchiveAction lead={lead} />
    <LeadEditForm lead={lead} />
