@@ -128,9 +128,10 @@
 
 .manageButton {
   position: fixed;
-  left: 16px;
-  bottom: 16px;
-  z-index: 450;
+  left: clamp(14px, 3vw, 28px);
+  right: auto;
+  bottom: clamp(14px, 3vw, 28px);
+  z-index: 600;
   border: 1px solid #d8e2ee;
   color: #071b40;
   background: #ffffff;

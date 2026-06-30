@@ -36,9 +36,9 @@ type Section =
   | "aide";
 
 function parseDownloadFilename(disposition: string | null) {
-  if (!disposition) return `neotravel-export-${new Date().toISOString().slice(0, 10)}.json`;
+  if (!disposition) return `neotravel-export-${new Date().toISOString().slice(0, 10)}.pdf`;
   const match = /filename="([^"]+)"/i.exec(disposition);
-  return match?.[1] ?? "neotravel-export.json";
+  return match?.[1] ?? "neotravel-export.pdf";
 }
 
 async function downloadExportFile(response: Response) {
